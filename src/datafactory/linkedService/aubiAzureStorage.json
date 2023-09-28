@@ -1,0 +1,17 @@
+{
+	"name": "aubiAzureStorage",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"type": "AzureBlobStorage",
+		"description": "Data retrieved from the Billing APIs will be written to this Azure Storage account",
+		"annotations": [],
+		"typeProperties": {
+			"serviceEndpoint": "@concat('https://',linkedService().StorageAccountName,'.blob.core.windows.net')"
+		},
+		"parameters": {
+			"StorageAccountName": {
+				"type": "String"
+			}
+		}
+	}
+}

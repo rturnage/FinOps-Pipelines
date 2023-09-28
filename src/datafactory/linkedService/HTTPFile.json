@@ -1,0 +1,18 @@
+{
+	"name": "HTTPFile",
+	"properties": {
+		"description": "Linked Service for a HTTP location where authentication is not needed or is supplied in the URL",
+		"parameters": {
+			"FileURL": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "HttpServer",
+		"typeProperties": {
+			"url": "@{linkedService().FileURL}",
+			"enableServerCertificateValidation": true,
+			"authenticationType": "Anonymous"
+		}
+	}
+}

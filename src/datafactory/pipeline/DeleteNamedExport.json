@@ -1,0 +1,158 @@
+{
+	"name": "DeleteNamedExport",
+	"properties": {
+		"activities": [
+			{
+				"name": "GetClientId",
+				"description": "Retrieve ClientId from Keyvault",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:05:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": true,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_clientId_secretname}?api-version=7.0",
+						"type": "Expression"
+					},
+					"method": "GET",
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://vault.azure.net"
+					}
+				}
+			},
+			{
+				"name": "GetTenantId",
+				"description": "Retrieve TenantId from Keyvault",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:05:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": true,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_tenantid_secretname}?api-version=7.0",
+						"type": "Expression"
+					},
+					"method": "GET",
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://vault.azure.net"
+					}
+				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "GetClientId",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "GetTenantId",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.exportNameArray",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "DeleteNamedExport_Pre",
+							"description": "Make a call to the ExportAPI to delete the named export",
+							"type": "WebActivity",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.00:02:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"url": {
+									"value": "@concat('https://management.azure.com/', pipeline().parameters.scope, '/providers/Microsoft.CostManagement/exports/',item(),'?api-version=',pipeline().parameters.CostManagementApiVersion)",
+									"type": "Expression"
+								},
+								"method": "DELETE",
+								"body": "x",
+								"authentication": {
+									"type": "ServicePrincipal",
+									"userTenant": {
+										"value": "@activity('GetTenantId').output.value",
+										"type": "Expression"
+									},
+									"username": {
+										"value": "@activity('GetClientId').output.value",
+										"type": "Expression"
+									},
+									"resource": "https://management.azure.com",
+									"password": {
+										"type": "AzureKeyVaultSecret",
+										"store": {
+											"referenceName": "aubiKeyVault",
+											"type": "LinkedServiceReference",
+											"parameters": {
+												"KeyVaultName": {
+													"value": "@pipeline().globalParameters.costopt_KeyVaultName",
+													"type": "Expression"
+												}
+											}
+										},
+										"secretName": {
+											"value": "@pipeline().globalParameters.costopt_clientsecret_secretname",
+											"type": "Expression"
+										}
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"exportNameArray": {
+				"type": "array",
+				"defaultValue": [
+					"<ExportName1>",
+					"<ExportName2>"
+				]
+			},
+			"scope": {
+				"type": "string",
+				"defaultValue": "providers/Microsoft.Billing/billingAccounts/<BillingAccountNum>"
+			},
+			"CostManagementApiVersion": {
+				"type": "string",
+				"defaultValue": "2021-01-01"
+			}
+		},
+		"folder": {
+			"name": "UsageData"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-09-23T00:35:31Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

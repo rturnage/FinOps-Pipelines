@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+######################################################
+# Pipeline patch for Issue #35 duplicate data.
+# Copy DB for qa and dev
+#
+# Globals
+#   RESOURCE_GROUP  src and dst resource group
+#   STORAGE_ACCOUNT_NAME src name and pattern.
+######################################################
+
+echo "Deploying ${BASH_SOURCE[0]}"
+
+# shellcheck disable=SC2164
+PROJ_ROOT_PATH=$(cd "$(dirname "$0")"/../..; pwd)
+echo "root folder: $PROJ_ROOT_PATH"
+
+echo "loading env variables"
+ENV_VARS="$(awk '!/^\s*#/' "${PROJ_ROOT_PATH}/.env" | awk '!/^\s*$/')"
+eval "$(
+  printf '%s\n' "$ENV_VARS" | while IFS='' read -r line; do
+    key=$(printf '%s\n' "$line"| sed 's/"/\\"/g' | cut -d '=' -f 1)
+    value=$(printf '%s\n' "$line" | cut -d '=' -f 2- | sed 's/"/\\\"/g' | tr -d '\f\r')
+    printf '%s\n' "export $key=\"$value\""
+  done
+)"
+
+# For example: Basic, S0, P1, GP_Gen4_1, GP_Gen5_S_8, BC_Gen5_2,
+echo Get current database pricing tier...
+service_objective=$(az sql db show --resource-group "$RESOURCE_GROUP" --server "$SQL_SERVER_NAME" --name "$SQL_DATABASE_NAME" --query "sku.name" --out tsv)
+echo "$service_objective"
+
+echo Create Copy for Dev
+echo Command: az sql db copy --resource-group "$RESOURCE_GROUP" --server "$SQL_SERVER_NAME" --name "$SQL_DATABASE_NAME" --dest-name "${SQL_DATABASE_NAME}_dev" --service-objective "$service_objective"
+az sql db copy --resource-group "$RESOURCE_GROUP" --server "$SQL_SERVER_NAME" --name "$SQL_DATABASE_NAME" --dest-name "${SQL_DATABASE_NAME}_dev" --service-objective "$service_objective"
+
+echo Create Copy for QA
+echo Command: az sql db copy --resource-group "$RESOURCE_GROUP" --server "$SQL_SERVER_NAME" --name "$SQL_DATABASE_NAME" --dest-name "${SQL_DATABASE_NAME}_qa" --service-objective "$service_objective"
+az sql db copy --resource-group "$RESOURCE_GROUP" --server "$SQL_SERVER_NAME" --name "$SQL_DATABASE_NAME" --dest-name "${SQL_DATABASE_NAME}_qa" --service-objective "$service_objective"
+echo Done

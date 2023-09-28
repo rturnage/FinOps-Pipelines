@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+###################################################################
+# Activate pyenv and virtualenv if present, then run the specified command
+# parameters
+# -p, --pr_name=NAME Pull Request name to use in version
+# outputs
+#   version_no, revision_no, and version_hash
+###################################################################
+
+# Stop on errors
+set -eu
+
+printf 'Running %s with args %s\n' "$0" "$*"
+
+# pyenv, pyenv-virtualenv
+if [ -s .python-version ]; then
+    PYENV_VERSION=$(head -n 1 .python-version)
+    export PYENV_VERSION
+fi
+
+# other common virtualenvs
+my_path=$(git rev-parse --show-toplevel)
+
+for venv in venv .venv .; do
+  if [ -f "${my_path}/${venv}/bin/activate" ]; then
+    echo "Found activate"
+    activate_path="${my_path}/${venv}/bin/activate"
+    # shellcheck source=.venv/bin/activate
+    . "$activate_path"
+    break
+  fi
+done
+
+exec "$@"

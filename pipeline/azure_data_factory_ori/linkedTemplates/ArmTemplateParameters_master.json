@@ -1,0 +1,110 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "value": "adf-cloud-financial-management"
+        },
+        "AubiSQLDatabase_connectionString": {
+            "value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=@{linkedService().servername}.database.windows.net;Initial Catalog=@{linkedService().databasename}"
+        },
+        "AzureManagementAPI_properties_typeProperties_url": {
+            "value": "https://management.azure.com"
+        },
+        "AzureManagementAPI_properties_typeProperties_servicePrincipalId": {
+            "value": "@{linkedService().servicePrincipalId}"
+        },
+        "AzureManagementAPI_properties_typeProperties_tenant": {
+            "value": "@{linkedService().tenantId}"
+        },
+        "AzureManagementAPI_properties_typeProperties_aadResourceId": {
+            "value": "https://management.azure.com/"
+        },
+        "HTTPFile_properties_typeProperties_url": {
+            "value": "@{linkedService().FileURL}"
+        },
+        "aubiAzureStorage_properties_typeProperties_serviceEndpoint": {
+            "value": "@concat('https://',linkedService().StorageAccountName,'.blob.core.windows.net')"
+        },
+        "aubiKeyVault_properties_typeProperties_baseUrl": {
+            "value": "https://@{linkedService().KeyVaultName}.vault.azure.net/"
+        },
+        "dataFactory_factoryName": {
+            "value": ""
+        },
+        "dataFactory_properties_globalParameters_ResRecLookbackPeriodsArray_value": {
+            "value": [
+                "Last7Days",
+                "Last30Days",
+                "Last60Days"
+            ]
+        },
+        "dataFactory_properties_globalParameters_ResRecServicesArray_value": {
+            "value": [
+                "VirtualMachines",
+                "SQLDatabases",
+                "PostgreSQL",
+                "ManagedDisk",
+                "MySQL",
+                "RedHat",
+                "MariaDB",
+                "RedisCache",
+                "CosmosDB",
+                "SqlDataWarehouse",
+                "SUSELinux",
+                "AppService",
+                "BlockBlob",
+                "AzureDataExplorer",
+                "VMwareCloudSimple"
+            ]
+        },
+        "dataFactory_properties_globalParameters_costopt_sqlservername_value": {
+            "value": "cfmsqlserver"
+        },
+        "dataFactory_properties_globalParameters_costopt_sqldbname_value": {
+            "value": "costoptsqldb"
+        },
+        "dataFactory_properties_globalParameters_costopt_KeyVaultName_value": {
+            "value": "costoptkeyvault0006"
+        },
+        "dataFactory_properties_globalParameters_costopt_tenantid_secretname_value": {
+            "value": "costopt-tenantid"
+        },
+        "dataFactory_properties_globalParameters_costopt_clientsecret_secretname_value": {
+            "value": "costopt-serviceprincipalsecret"
+        },
+        "dataFactory_properties_globalParameters_costopt_clientId_secretname_value": {
+            "value": "costopt-serviceprincipalclientid"
+        },
+        "dataFactory_properties_globalParameters_costopt_StorageAccountName_value": {
+            "value": "costoptstorage"
+        },
+        "dataFactory_properties_globalParameters_costopt_ResourceGroupName_value": {
+            "value": "rg-costopt"
+        },
+        "dataFactory_properties_globalParameters_costopt_EnrollmentNumber_value": {
+            "value": "123456"
+        },
+        "dataFactory_properties_globalParameters_costopt_StorageAccountSubscriptionId_value": {
+            "value": "SubId"
+        },
+        "dataFactory_properties_globalParameters_costopt_PriceSheetSubscriptionId_value": {
+            "value": "SubId"
+        },
+        "dataFactory_properties_globalParameters_costopt_Container_value": {
+            "value": "costopt"
+        },
+        "dataFactory_location": {
+            "value": "westeurope"
+        },
+        "dataFactory_identity_type": {
+            "value": "SystemAssigned"
+        },
+        "containerUri": {
+            "value": ""
+        },
+        "containerSasToken": {
+            "value": ""
+        }
+    }
+}

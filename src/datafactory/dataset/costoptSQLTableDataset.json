@@ -1,0 +1,50 @@
+{
+	"name": "costoptSQLTableDataset",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AubiSQLDatabase",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"databasename": {
+					"value": "@dataset().sqldbname",
+					"type": "Expression"
+				},
+				"servername": {
+					"value": "@dataset().sqlservername",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"tablename": {
+				"type": "string"
+			},
+			"schemaname": {
+				"type": "string"
+			},
+			"sqlservername": {
+				"type": "string"
+			},
+			"sqldbname": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "ProcessUsageData"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": {
+				"value": "@dataset().schemaname",
+				"type": "Expression"
+			},
+			"table": {
+				"value": "@dataset().tablename",
+				"type": "Expression"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,95 @@
+{
+	"name": "GetISFRatioDataPipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "CopyISFRatioData",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "BinarySource",
+						"storeSettings": {
+							"type": "HttpReadSettings",
+							"requestMethod": "GET"
+						},
+						"formatSettings": {
+							"type": "BinaryReadSettings"
+						}
+					},
+					"sink": {
+						"type": "BinarySink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "HTTPFile",
+						"type": "DatasetReference",
+						"parameters": {
+							"FileURL": {
+								"value": "@pipeline().parameters.ISFFileURL",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "AubiBinaryFile",
+						"type": "DatasetReference",
+						"parameters": {
+							"StorageAccountName": {
+								"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+								"type": "Expression"
+							},
+							"Container": {
+								"value": "@pipeline().globalParameters.costopt_Container",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@pipeline().parameters.Download_StorageBlobDirectory",
+								"type": "Expression"
+							},
+							"FIleName": {
+								"value": "@pipeline().parameters.DownloadTargetFilename",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"Download_StorageBlobDirectory": {
+				"type": "string",
+				"defaultValue": "download/isfratio"
+			},
+			"DownloadTargetFilename": {
+				"type": "string",
+				"defaultValue": "isfratio.csv"
+			},
+			"ISFFileURL": {
+				"type": "string",
+				"defaultValue": "https://isfratio.blob.core.windows.net/isfratio/ISFRatio.csv"
+			}
+		},
+		"folder": {
+			"name": "ISFRatio"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-09-21T22:04:41Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

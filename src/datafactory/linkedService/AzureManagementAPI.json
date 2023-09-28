@@ -1,0 +1,49 @@
+{
+	"name": "AzureManagementAPI",
+	"properties": {
+		"parameters": {
+			"servicePrincipalId": {
+				"type": "string"
+			},
+			"servicePrincipalSecretKeyName": {
+				"type": "string",
+				"defaultValue": "aubi-serviceprincipalsecret"
+			},
+			"tenantId": {
+				"type": "string"
+			},
+			"KeyVaultName": {
+				"type": "string",
+				"defaultValue": "<KeyVaultName>"
+			}
+		},
+		"annotations": [],
+		"type": "RestService",
+		"typeProperties": {
+			"url": "https://management.azure.com",
+			"enableServerCertificateValidation": true,
+			"authenticationType": "AadServicePrincipal",
+			"servicePrincipalId": "@{linkedService().servicePrincipalId}",
+			"servicePrincipalKey": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "aubiKeyVault",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"KeyVaultName": {
+							"value": "@linkedService().KeyVaultName",
+							"type": "Expression"
+						}
+					}
+				},
+				"secretName": {
+					"value": "@{linkedService().servicePrincipalSecretKeyName}",
+					"type": "Expression"
+				}
+			},
+			"tenant": "@{linkedService().tenantId}",
+			"aadResourceId": "https://management.azure.com/"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/linkedservices"
+}

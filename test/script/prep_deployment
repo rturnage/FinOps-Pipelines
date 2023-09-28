@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+######################################################
+# Prepare release file to test deployment
+# Params
+#
+# artifact name. Example azure_cfm.2023.05.1
+######################################################
+echo starting script
+
+# Stop on errors
+set -e
+
+## Globals
+PROJ_ROOT_PATH=$(cd "$(dirname "$0")"/../..; pwd)
+echo "root folder: $PROJ_ROOT_PATH"
+
+echo "loading env variables"
+ENV_VARS="$(awk '!/^\s*#/' "${PROJ_ROOT_PATH}/.env" | awk '!/^\s*$/')"
+eval "$(
+  printf '%s\n' "$ENV_VARS" | while IFS='' read -r line; do
+    key=$(printf '%s\n' "$line"| sed 's/"/\\"/g' | cut -d '=' -f 1)
+    value=$(printf '%s\n' "$line" | cut -d '=' -f 2- | sed 's/"/\\\"/g' | tr -d '\f\r')
+    printf '%s\n' "export $key=\"$value\""
+  done
+)"
+
+if [[ -z "$1" ]]; then
+    echo "Artifact name is required. prep_deployment azure_cfm.2023.05.1"
+    exit 1
+fi
+
+file_version=$1
+file_path="${DOWNLOAD_PATH}/${file_version}.zip"
+dest_path="${PROJ_ROOT_PATH}/test/${file_version}"
+
+echo "Copy ${file_path} to ${dest_path}"
+unzip -XK "${file_path}" -d "${dest_path}"
+
+# make scripts executables
+old_dir=$(pwd)
+pwd
+cd "${dest_path}"
+pwd
+find script  -type f -exec chmod 755 {} +
+cd "$old_dir"
+pwd
+
+echo "Copy and update .env to ${dest_path}"
+cp "${PROJ_ROOT_PATH}/.env" "${dest_path}"
+sed -i -e "s/pipeline\/azure_data_factory_patch/pipeline/" "${dest_path}/.env"
+sed -i -e "s/LOOKUP_PATH=script/LOOKUP_PATH=..\/..\/script/" "${dest_path}/.env"
+sed -i -e "s/AZCOPY_PATH=script/AZCOPY_PATH=..\/..\/script/" "${dest_path}/.env"

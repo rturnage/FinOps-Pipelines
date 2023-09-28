@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+######################################################
+# Pipeline patch for Issue #35 duplicate data.
+# Create a Storage Blob Contributor role assignment for
+# the data factory managed identity
+#
+# Globals
+#   PIPELINE_ADF_IDENTITY_NAME  src and dst resource group
+#   RESOURCE_GROUP src name and pattern.
+#   STORAGE_ACCOUNT_NAME src name and pattern.
+######################################################
+
+echo "Deploying ${BASH_SOURCE[0]}"
+
+# shellcheck disable=SC2164
+PROJ_ROOT_PATH=$(cd "$(dirname "$0")"/../..; pwd)
+echo "root folder: $PROJ_ROOT_PATH"
+
+echo "loading env variables"
+ENV_VARS="$(awk '!/^\s*#/' "${PROJ_ROOT_PATH}/.env" | awk '!/^\s*$/')"
+eval "$(
+  printf '%s\n' "$ENV_VARS" | while IFS='' read -r line; do
+    key=$(printf '%s\n' "$line"| sed 's/"/\\"/g' | cut -d '=' -f 1)
+    value=$(printf '%s\n' "$line" | cut -d '=' -f 2- | sed 's/"/\\\"/g' | tr -d '\f\r')
+    printf '%s\n' "export $key=\"$value\""
+  done
+)"
+
+STORAGE_CONTRIBUTOR_ROLE_NAME="Storage Blob Data Contributor"
+role_name=$(az role definition list --name "${STORAGE_CONTRIBUTOR_ROLE_NAME}" --query [].name --out tsv)
+retVal=$?
+if [[ $retVal -ne 0 ]]; then
+  echo
+  echo "Failed getting role name --name ${STORAGE_CONTRIBUTOR_ROLE_NAME}"
+  exit
+fi
+
+managed_identity_id=$(az ad sp list --display-name "$PIPELINE_ADF_IDENTITY_NAME" --query [].id --out tsv)
+retVal=$?
+if [[ $retVal -ne 0 ]]; then
+  echo
+  echo "Failed getting managed identity id --display-name $PIPELINE_ADF_IDENTITY_NAME"
+  exit
+fi
+
+storage_account_id=$(az storage account show --resource-group "$RESOURCE_GROUP" --name "$STORAGE_ACCOUNT_NAME" --query id --out tsv)
+retVal=$?
+if [[ $retVal -ne 0 ]]; then
+  echo
+  echo "Failed getting storage account id --resource-group $RESOURCE_GROUP --name $STORAGE_ACCOUNT_NAME"
+  exit
+fi
+
+# az role assignment create --assignee "${managed_identity_id}" --role "$role_id" --scope "$storage_account_id"
+az role assignment create --assignee-object-id "${managed_identity_id}" --assignee-principal-type "ServicePrincipal" --role "$role_name" --scope "$storage_account_id"
+
+
+retVal=$?
+if [[ $retVal -ne 0 ]]; then
+  echo
+  echo "Failed creating role assignment for --assignee ${managed_identity_id} --role $role_name --scope $storage_account_id"
+else
+  echo
+  echo "Done creating role assignment for --assignee ${managed_identity_id} --role $role_name --scope $storage_account_id"
+fi

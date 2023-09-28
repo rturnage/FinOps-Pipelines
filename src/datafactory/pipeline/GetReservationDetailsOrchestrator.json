@@ -1,0 +1,246 @@
+{
+	"name": "GetReservationDetailsOrchestrator",
+	"properties": {
+		"activities": [
+			{
+				"name": "DeleteReservationDetailsFiles",
+				"type": "Delete",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "AubiBinaryFile",
+						"type": "DatasetReference",
+						"parameters": {
+							"StorageAccountName": {
+								"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+								"type": "Expression"
+							},
+							"Container": {
+								"value": "@pipeline().globalParameters.costopt_Container",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@pipeline().parameters.costopt_StorageDirectoryName",
+								"type": "Expression"
+							},
+							"FIleName": "NOTNEEDED"
+						}
+					},
+					"enableLogging": false,
+					"storeSettings": {
+						"type": "AzureBlobStorageReadSettings",
+						"recursive": false,
+						"wildcardFileName": "*",
+						"enablePartitionDiscovery": false
+					}
+				}
+			},
+			{
+				"name": "UntilEndDateReached",
+				"type": "Until",
+				"dependsOn": [
+					{
+						"activity": "SetBatchStartDate",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greaterOrEquals(variables('BatchEndDate'),pipeline().parameters.ExtractEndDate)",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "SetBatchEndDate",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "BatchEndDate",
+								"value": {
+									"value": "@if( greater(adddays(variables('BatchStartDate'),pipeline().parameters.ResDetailsLoopIncrement,'yyyy-MM-dd') , pipeline().parameters.ExtractEndDate)\n, pipeline().parameters.ExtractEndDate\n,adddays(variables('BatchStartDate'),pipeline().parameters.ResDetailsLoopIncrement,'yyyy-MM-dd')\n)",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "SetNewStartDate",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "AddDateRangeToProcess",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "BatchStartDate",
+								"value": {
+									"value": "@adddays(variables('BatchEndDate'),1,'yyyy-MM-dd')",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "AddDateRangeToProcess",
+							"type": "AppendVariable",
+							"dependsOn": [
+								{
+									"activity": "SetBatchEndDate",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "DateRangesToProcess",
+								"value": {
+									"value": "{\"StartDate\":\"@{variables('BatchStartDate')}\",\"EndDate\":\"@{variables('BatchEndDate')}\"}",
+									"type": "Expression"
+								}
+							}
+						}
+					],
+					"timeout": "7.00:00:00"
+				}
+			},
+			{
+				"name": "SetBatchStartDate",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "DeleteReservationDetailsFiles",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "BatchStartDate",
+					"value": {
+						"value": "@pipeline().parameters.ExtractStartDate",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEachDateRange",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "UntilEndDateReached",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@variables('DateRangesToProcess')",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"batchCount": 5,
+					"activities": [
+						{
+							"name": "GetReservationDetails",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "GetReservationDetailsReportAsynch",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"Download_StorageBlobDirectory": {
+										"value": "@pipeline().parameters.costopt_StorageDirectoryName",
+										"type": "Expression"
+									},
+									"DownloadTargetFilename": {
+										"value": "resdetails-@{formatDateTime(json(item()).StartDate,'yyyyMMdd')}-@{formatDateTime(json(item()).EndDate,'yyyyMMdd')}.csv",
+										"type": "Expression"
+									},
+									"scope": {
+										"value": "@pipeline().parameters.BillingAccountScope",
+										"type": "Expression"
+									},
+									"CostManagementAPIVersion": {
+										"value": "@pipeline().parameters.CostManagementAPIVersion",
+										"type": "Expression"
+									},
+									"StartDate": {
+										"value": "@json(item()).StartDate",
+										"type": "Expression"
+									},
+									"EndDate": {
+										"value": "@json(item()).EndDate",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"costopt_StorageDirectoryName": {
+				"type": "string",
+				"defaultValue": "download/resdetails"
+			},
+			"ExtractStartDate": {
+				"type": "string",
+				"defaultValue": "2021-01-01"
+			},
+			"ExtractEndDate": {
+				"type": "string",
+				"defaultValue": "2021-01-03"
+			},
+			"ResDetailsLoopIncrement": {
+				"type": "int",
+				"defaultValue": 60
+			},
+			"BillingAccountScope": {
+				"type": "string",
+				"defaultValue": "providers/Microsoft.Billing/billingAccounts/<BillingAccountNum>"
+			},
+			"CostManagementAPIVersion": {
+				"type": "string",
+				"defaultValue": "2019-11-01"
+			}
+		},
+		"variables": {
+			"DateRangesToProcess": {
+				"type": "Array"
+			},
+			"BatchStartDate": {
+				"type": "String"
+			},
+			"BatchEndDate": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "ReservationDetails"
+		},
+		"annotations": []
+	}
+}

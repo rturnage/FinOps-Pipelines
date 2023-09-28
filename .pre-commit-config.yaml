@@ -1,0 +1,90 @@
+repos:
+    - repo: https://github.com/PyCQA/isort
+      rev: 5.12.0
+      hooks:
+        - id: isort
+    - repo: 'https://github.com/codespell-project/codespell'
+      rev: v2.2.4
+      hooks:
+        - id: codespell
+          args:
+            - '--skip="./.*,*.csv,*.pyc,./docs/_build/*,./htmlcov/*"'
+            - '--quiet-level=2'
+          exclude_types:
+            - csv
+            - json
+    - repo: 'https://github.com/psf/black'
+      rev: 23.3.0
+      hooks:
+        - id: black
+          args:
+            - '--safe'
+            - '--quiet'
+    - repo: 'https://github.com/pycqa/flake8'
+      rev: 6.0.0
+      hooks:
+        - id: flake8
+          additional_dependencies:
+            - flake8-docstrings==1.7.0
+            - pydocstyle==6.3.0
+          types: [python]
+
+    - repo: 'https://github.com/PyCQA/bandit'
+      rev: 1.7.5
+      hooks:
+        - id: bandit
+          args:
+            - '--quiet'
+            - '--configfile=pyproject.toml'
+          additional_dependencies: [".[toml]"]
+
+    - repo: 'https://github.com/myint/rstcheck'
+      rev: 3f929574
+      hooks:
+        - id: rstcheck
+          args:
+          - '--config=pyproject.toml'
+          additional_dependencies: [ toml ]
+    - repo: https://github.com/pycqa/pydocstyle
+      rev: 6.3.0
+      hooks:
+        - id: pydocstyle
+          additional_dependencies: [ toml ]
+    - repo: 'https://github.com/pre-commit/pre-commit-hooks'
+      rev: v4.4.0
+      hooks:
+        - id: check-yaml
+          args: [--unsafe]
+        - id: end-of-file-fixer
+        - id: mixed-line-ending
+        - id: trailing-whitespace
+    - repo: https://github.com/shellcheck-py/shellcheck-py
+      rev: v0.9.0.2
+      hooks:
+      -   id: shellcheck
+          args: [--external-sources]
+    - repo: local
+      hooks:
+        - id: check_shellcheck
+          name: check_shellcheck
+          entry: script/check_shellcheck
+          language: script
+          exclude_types: [json, sql, toml, yaml]
+          files: ^(script|test\/script)/.+$
+
+        - id: check_datafactory_arm_format
+          name: check_datafactory_arm_format
+          entry: script/check_datafactory_arm_format
+          language: script
+          files: ^(pipeline/azure_data_factory_.+/ARMTemplate(Parameters)?ForFactory\.json)$
+        - id: check_sqlfluff
+          name: check_sqlfluff
+          entry: script/check_sqlfluff
+          language: script
+          files: ^(sql/.+\.sql)$
+          exclude: sp_WhoIsActive.sql
+        - id: pylint
+          name: pylint
+          entry: script/run_in_env pylint -j 0
+          language: script
+          types: [python]

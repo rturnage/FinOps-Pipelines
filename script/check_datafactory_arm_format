@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+###################################################################
+# Format ADF arm template files
+#
+# Params
+#   Files. path to one or more json files separated by spaces
+###################################################################
+
+# Stop on errors
+set -e
+
+printf 'Running %s with args %s\n' "$0" "$*"
+
+for i do
+
+
+    if [[ "${i,,}" == *"parameters"* ]]; then
+        # Get parameters from main template
+        lookup_params=$(python ./script/format_json.py --file "${i/Parameters/}")
+        retVal=$?
+        if [[ $retVal -ne 0 ]]; then
+            echo
+            echo "Getting lookup params template"
+            exit 2
+        fi
+        if ! python ./script/format_json.py --file "$i" --parameters "$lookup_params"; then
+            echo "Failed formatting json."
+            exit 1
+        fi
+    elif ! python ./script/format_json.py --file "$i"; then
+        echo "Failed formatting json."
+        exit 1
+    fi
+
+
+done

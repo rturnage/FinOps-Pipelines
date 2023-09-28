@@ -1,0 +1,457 @@
+{
+	"name": "GetReservationRecommendations",
+	"properties": {
+		"activities": [
+			{
+				"name": "GetClientId",
+				"description": "Retrieve ClientId from Keyvault",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:05:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": true,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_clientId_secretname}?api-version=7.0",
+						"type": "Expression"
+					},
+					"method": "GET",
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://vault.azure.net"
+					}
+				}
+			},
+			{
+				"name": "GetTenantId",
+				"description": "Retrieve TenantId from Keyvault",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:05:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": true,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_tenantid_secretname}?api-version=7.0",
+						"type": "Expression"
+					},
+					"method": "GET",
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://vault.azure.net"
+					}
+				}
+			},
+			{
+				"name": "ForEachService - Single",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "GetClientId",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "GetTenantId",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().globalParameters.ResRecServicesArray",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "CopyReservationRecommendationsSingle",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "RestSource",
+									"httpRequestTimeout": "00:01:40",
+									"requestInterval": "00.00:00:00.010",
+									"requestMethod": "GET",
+									"paginationRules": {
+										"AbsoluteUrl": "$.nextLink"
+									}
+								},
+								"sink": {
+									"type": "JsonSink",
+									"storeSettings": {
+										"type": "AzureBlobStorageWriteSettings"
+									},
+									"formatSettings": {
+										"type": "JsonWriteSettings"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"mappings": [
+										{
+											"source": {
+												"path": "['kind']"
+											},
+											"sink": {
+												"path": "$['kind']"
+											}
+										},
+										{
+											"source": {
+												"path": "['id']"
+											},
+											"sink": {
+												"path": "$['id']"
+											}
+										},
+										{
+											"source": {
+												"path": "['name']"
+											},
+											"sink": {
+												"path": "$['name']"
+											}
+										},
+										{
+											"source": {
+												"path": "['type']"
+											},
+											"sink": {
+												"path": "$['type']"
+											}
+										},
+										{
+											"source": {
+												"path": "['location']"
+											},
+											"sink": {
+												"path": "$['location']"
+											}
+										},
+										{
+											"source": {
+												"path": "['sku']"
+											},
+											"sink": {
+												"path": "$['sku']"
+											}
+										},
+										{
+											"source": {
+												"path": "['properties']"
+											},
+											"sink": {
+												"path": "$['properties']"
+											}
+										}
+									],
+									"collectionReference": "$['value']"
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "ManagementAPIDataSet",
+									"type": "DatasetReference",
+									"parameters": {
+										"servicePrincipalId": {
+											"value": "@activity('GetClientId').output.value",
+											"type": "Expression"
+										},
+										"servicePrincipalSecretKeyName": {
+											"value": "@pipeline().globalParameters.costopt_clientsecret_secretname",
+											"type": "Expression"
+										},
+										"tenantId": {
+											"value": "@activity('GetTenantId').output.value",
+											"type": "Expression"
+										},
+										"scope": {
+											"value": "@pipeline().parameters.scope",
+											"type": "Expression"
+										},
+										"api": "providers/Microsoft.Consumption/reservationRecommendations",
+										"apiversion": {
+											"value": "@pipeline().parameters.ConsumptionAPIVersion",
+											"type": "Expression"
+										},
+										"filter": {
+											"value": "&$filter=properties/scope eq 'Single' AND properties/lookBackPeriod eq '@{pipeline().parameters.LookbackPeriod}' AND properties/resourceType eq '@{item()}'",
+											"type": "Expression"
+										},
+										"KeyVaultName": {
+											"value": "@pipeline().globalParameters.costopt_KeyVaultName",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "JsonDataset",
+									"type": "DatasetReference",
+									"parameters": {
+										"StorageAccountName": {
+											"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+											"type": "Expression"
+										},
+										"Container": {
+											"value": "@pipeline().globalParameters.costopt_Container",
+											"type": "Expression"
+										},
+										"Directory": {
+											"value": "@pipeline().parameters.Download_StorageBlobDirectory",
+											"type": "Expression"
+										},
+										"FileName": {
+											"value": "@{concat(pipeline().parameters.Single_RI_FilenamePrefix,item(),'.json')}",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "ForEachService - Shared",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "GetClientId",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "GetTenantId",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().globalParameters.ResRecServicesArray",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "CopyReservationRecommendationsShared",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "RestSource",
+									"httpRequestTimeout": "00:01:40",
+									"requestInterval": "00.00:00:00.010",
+									"requestMethod": "GET",
+									"paginationRules": {
+										"AbsoluteUrl": "$.nextLink"
+									}
+								},
+								"sink": {
+									"type": "JsonSink",
+									"storeSettings": {
+										"type": "AzureBlobStorageWriteSettings"
+									},
+									"formatSettings": {
+										"type": "JsonWriteSettings"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"mappings": [
+										{
+											"source": {
+												"path": "['kind']"
+											},
+											"sink": {
+												"path": "$['kind']"
+											}
+										},
+										{
+											"source": {
+												"path": "['id']"
+											},
+											"sink": {
+												"path": "$['id']"
+											}
+										},
+										{
+											"source": {
+												"path": "['name']"
+											},
+											"sink": {
+												"path": "$['name']"
+											}
+										},
+										{
+											"source": {
+												"path": "['type']"
+											},
+											"sink": {
+												"path": "$['type']"
+											}
+										},
+										{
+											"source": {
+												"path": "['location']"
+											},
+											"sink": {
+												"path": "$['location']"
+											}
+										},
+										{
+											"source": {
+												"path": "['sku']"
+											},
+											"sink": {
+												"path": "$['sku']"
+											}
+										},
+										{
+											"source": {
+												"path": "['properties']"
+											},
+											"sink": {
+												"path": "$['properties']"
+											}
+										}
+									],
+									"collectionReference": "$['value']"
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "ManagementAPIDataSet",
+									"type": "DatasetReference",
+									"parameters": {
+										"servicePrincipalId": {
+											"value": "@activity('GetClientId').output.value",
+											"type": "Expression"
+										},
+										"servicePrincipalSecretKeyName": {
+											"value": "@pipeline().globalParameters.costopt_clientsecret_secretname",
+											"type": "Expression"
+										},
+										"tenantId": {
+											"value": "@activity('GetTenantId').output.value",
+											"type": "Expression"
+										},
+										"scope": {
+											"value": "@pipeline().parameters.scope",
+											"type": "Expression"
+										},
+										"api": "providers/Microsoft.Consumption/reservationRecommendations",
+										"apiversion": {
+											"value": "@pipeline().parameters.ConsumptionAPIVersion",
+											"type": "Expression"
+										},
+										"filter": {
+											"value": "&$filter=properties/scope eq 'Shared' AND properties/lookBackPeriod eq '@{pipeline().parameters.LookbackPeriod}' AND properties/resourceType eq '@{item()}'",
+											"type": "Expression"
+										},
+										"KeyVaultName": {
+											"value": "@pipeline().globalParameters.costopt_KeyVaultName",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "JsonDataset",
+									"type": "DatasetReference",
+									"parameters": {
+										"StorageAccountName": {
+											"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+											"type": "Expression"
+										},
+										"Container": {
+											"value": "@pipeline().globalParameters.costopt_Container",
+											"type": "Expression"
+										},
+										"Directory": {
+											"value": "@pipeline().parameters.Download_StorageBlobDirectory",
+											"type": "Expression"
+										},
+										"FileName": {
+											"value": "@{concat(pipeline().parameters.Shared_RI_FilenamePrefix,item(),'.json')}",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"Download_StorageBlobDirectory": {
+				"type": "string",
+				"defaultValue": "download/resrecommendations"
+			},
+			"LookbackPeriod": {
+				"type": "string",
+				"defaultValue": "Last7Days"
+			},
+			"Shared_RI_FilenamePrefix": {
+				"type": "string",
+				"defaultValue": "Shared_"
+			},
+			"Single_RI_FilenamePrefix": {
+				"type": "string",
+				"defaultValue": "Single_"
+			},
+			"scope": {
+				"type": "string",
+				"defaultValue": "providers/Microsoft.Billing/billingAccounts/<BillingAccountNum>"
+			},
+			"ConsumptionAPIVersion": {
+				"type": "string",
+				"defaultValue": "2021-10-01"
+			}
+		},
+		"folder": {
+			"name": "ReservationRecommendations"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-09-22T23:02:00Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,257 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "type": "string",
+            "metadata": "Data Factory name",
+            "defaultValue": "adf-cloud-financial-management"
+        },
+        "AubiSQLDatabase_connectionString": {
+            "type": "secureString",
+            "metadata": "Secure string for 'connectionString' of 'AubiSQLDatabase'",
+            "defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=@{linkedService().servername}.database.windows.net;Initial Catalog=@{linkedService().databasename}"
+        },
+        "AzureManagementAPI_properties_typeProperties_url": {
+            "type": "string",
+            "defaultValue": "https://management.azure.com"
+        },
+        "AzureManagementAPI_properties_typeProperties_servicePrincipalId": {
+            "type": "string",
+            "defaultValue": "@{linkedService().servicePrincipalId}"
+        },
+        "AzureManagementAPI_properties_typeProperties_tenant": {
+            "type": "string",
+            "defaultValue": "@{linkedService().tenantId}"
+        },
+        "AzureManagementAPI_properties_typeProperties_aadResourceId": {
+            "type": "string",
+            "defaultValue": "https://management.azure.com/"
+        },
+        "HTTPFile_properties_typeProperties_url": {
+            "type": "string",
+            "defaultValue": "@{linkedService().FileURL}"
+        },
+        "aubiAzureStorage_properties_typeProperties_serviceEndpoint": {
+            "type": "string",
+            "defaultValue": "@concat('https://',linkedService().StorageAccountName,'.blob.core.windows.net')"
+        },
+        "aubiKeyVault_properties_typeProperties_baseUrl": {
+            "type": "string",
+            "defaultValue": "https://@{linkedService().KeyVaultName}.vault.azure.net/"
+        },
+        "dataFactory_factoryName": {
+            "type": "string"
+        },
+        "dataFactory_properties_globalParameters_ResRecLookbackPeriodsArray_value": {
+            "type": "array",
+            "defaultValue": [
+                "Last7Days",
+                "Last30Days",
+                "Last60Days"
+            ]
+        },
+        "dataFactory_properties_globalParameters_ResRecServicesArray_value": {
+            "type": "array",
+            "defaultValue": [
+                "VirtualMachines",
+                "SQLDatabases",
+                "PostgreSQL",
+                "ManagedDisk",
+                "MySQL",
+                "RedHat",
+                "MariaDB",
+                "RedisCache",
+                "CosmosDB",
+                "SqlDataWarehouse",
+                "SUSELinux",
+                "AppService",
+                "BlockBlob",
+                "AzureDataExplorer",
+                "VMwareCloudSimple"
+            ]
+        },
+        "dataFactory_properties_globalParameters_costopt_sqlservername_value": {
+            "type": "string",
+            "defaultValue": "cfmsqlserver"
+        },
+        "dataFactory_properties_globalParameters_costopt_sqldbname_value": {
+            "type": "string",
+            "defaultValue": "costoptsqldb"
+        },
+        "dataFactory_properties_globalParameters_costopt_KeyVaultName_value": {
+            "type": "string",
+            "defaultValue": "costoptkeyvault0006"
+        },
+        "dataFactory_properties_globalParameters_costopt_tenantid_secretname_value": {
+            "type": "string",
+            "defaultValue": "costopt-tenantid"
+        },
+        "dataFactory_properties_globalParameters_costopt_clientsecret_secretname_value": {
+            "type": "string",
+            "defaultValue": "costopt-serviceprincipalsecret"
+        },
+        "dataFactory_properties_globalParameters_costopt_clientId_secretname_value": {
+            "type": "string",
+            "defaultValue": "costopt-serviceprincipalclientid"
+        },
+        "dataFactory_properties_globalParameters_costopt_StorageAccountName_value": {
+            "type": "string",
+            "defaultValue": "costoptstorage"
+        },
+        "dataFactory_properties_globalParameters_costopt_ResourceGroupName_value": {
+            "type": "string",
+            "defaultValue": "rg-costopt"
+        },
+        "dataFactory_properties_globalParameters_costopt_EnrollmentNumber_value": {
+            "type": "string",
+            "defaultValue": "123456"
+        },
+        "dataFactory_properties_globalParameters_costopt_StorageAccountSubscriptionId_value": {
+            "type": "string",
+            "defaultValue": "SubId"
+        },
+        "dataFactory_properties_globalParameters_costopt_PriceSheetSubscriptionId_value": {
+            "type": "string",
+            "defaultValue": "SubId"
+        },
+        "dataFactory_properties_globalParameters_costopt_Container_value": {
+            "type": "string",
+            "defaultValue": "costopt"
+        },
+        "dataFactory_location": {
+            "type": "string",
+            "defaultValue": "westeurope"
+        },
+        "dataFactory_identity_type": {
+            "type": "string",
+            "defaultValue": "SystemAssigned"
+        },
+        "containerUri": {
+            "type": "string",
+            "metadata": "URI to storage account containing linked ARM templates"
+        },
+        "containerSasToken": {
+            "type": "string",
+            "metadata": "Sas token to storage account containing linked ARM templates"
+        }
+    },
+    "variables": {
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+    },
+    "resources": [
+        {
+            "name": "adf-cloud-financial-management_ArmTemplate_0",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-02-01",
+            "properties": {
+                "mode": "incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "factoryName": {
+                        "value": "[parameters('factoryName')]"
+                    },
+                    "AubiSQLDatabase_connectionString": {
+                        "value": "[parameters('AubiSQLDatabase_connectionString')]"
+                    },
+                    "dataFactory_factoryName": {
+                        "value": "[parameters('dataFactory_factoryName')]"
+                    },
+                    "dataFactory_properties_globalParameters_ResRecLookbackPeriodsArray_value": {
+                        "value": "[parameters('dataFactory_properties_globalParameters_ResRecLookbackPeriodsArray_value')]"
+                    },
+                    "dataFactory_properties_globalParameters_ResRecServicesArray_value": {
+                        "value": "[parameters('dataFactory_properties_globalParameters_ResRecServicesArray_value')]"
+                    },
+                    "dataFactory_properties_globalParameters_costopt_sqlservername_value": {
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_sqlservername_value')]"
+                    },
+                    "dataFactory_properties_globalParameters_costopt_sqldbname_value": {
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_sqldbname_value')]"
+                    },
+                    "dataFactory_properties_globalParameters_costopt_KeyVaultName_value": {
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_KeyVaultName_value')]"
+                    },
+                    "dataFactory_properties_globalParameters_costopt_tenantid_secretname_value": {
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_tenantid_secretname_value')]"
+                    },
+                    "dataFactory_properties_globalParameters_costopt_clientsecret_secretname_value": {
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_clientsecret_secretname_value')]"
+                    },
+                    "dataFactory_properties_globalParameters_costopt_clientId_secretname_value": {
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_clientId_secretname_value')]"
+                    },
+                    "dataFactory_properties_globalParameters_costopt_StorageAccountName_value": {
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_StorageAccountName_value')]"
+                    },
+                    "dataFactory_properties_globalParameters_costopt_ResourceGroupName_value": {
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_ResourceGroupName_value')]"
+                    },
+                    "dataFactory_properties_globalParameters_costopt_EnrollmentNumber_value": {
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_EnrollmentNumber_value')]"
+                    },
+                    "dataFactory_properties_globalParameters_costopt_StorageAccountSubscriptionId_value": {
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_StorageAccountSubscriptionId_value')]"
+                    },
+                    "dataFactory_properties_globalParameters_costopt_PriceSheetSubscriptionId_value": {
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_PriceSheetSubscriptionId_value')]"
+                    },
+                    "dataFactory_properties_globalParameters_costopt_Container_value": {
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_Container_value')]"
+                    },
+                    "dataFactory_location": {
+                        "value": "[parameters('dataFactory_location')]"
+                    },
+                    "dataFactory_identity_type": {
+                        "value": "[parameters('dataFactory_identity_type')]"
+                    },
+                    "HTTPFile_properties_typeProperties_url": {
+                        "value": "[parameters('HTTPFile_properties_typeProperties_url')]"
+                    },
+                    "aubiAzureStorage_properties_typeProperties_serviceEndpoint": {
+                        "value": "[parameters('aubiAzureStorage_properties_typeProperties_serviceEndpoint')]"
+                    },
+                    "aubiKeyVault_properties_typeProperties_baseUrl": {
+                        "value": "[parameters('aubiKeyVault_properties_typeProperties_baseUrl')]"
+                    },
+                    "AzureManagementAPI_properties_typeProperties_url": {
+                        "value": "[parameters('AzureManagementAPI_properties_typeProperties_url')]"
+                    },
+                    "AzureManagementAPI_properties_typeProperties_servicePrincipalId": {
+                        "value": "[parameters('AzureManagementAPI_properties_typeProperties_servicePrincipalId')]"
+                    },
+                    "AzureManagementAPI_properties_typeProperties_tenant": {
+                        "value": "[parameters('AzureManagementAPI_properties_typeProperties_tenant')]"
+                    },
+                    "AzureManagementAPI_properties_typeProperties_aadResourceId": {
+                        "value": "[parameters('AzureManagementAPI_properties_typeProperties_aadResourceId')]"
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "adf-cloud-financial-management_ArmTemplate_1",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-02-01",
+            "properties": {
+                "mode": "incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('containerUri'), '/ArmTemplate_1.json', parameters('containerSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "factoryName": {
+                        "value": "[parameters('factoryName')]"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Resources/deployments', 'adf-cloud-financial-management_ArmTemplate_0')]"
+            ]
+        }
+    ]
+}

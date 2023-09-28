@@ -1,0 +1,234 @@
+{
+	"name": "GetReservationRecommendationsOrchestrator",
+	"properties": {
+		"description": "Gets Shared and Single RI Recommendations for multiple lookback periods (parameter) for multiple services (parameter) and merge these into a single file. \nOne \"Shared Recommendations\" file and one \"Single Recommendations\" file is created.",
+		"activities": [
+			{
+				"name": "ForEachLookbackPeriod",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "DeleteTargetFile",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().globalParameters.ResRecLookbackPeriodsArray",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "GetReservationRecommendations",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "GetReservationRecommendations",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"Download_StorageBlobDirectory": {
+										"value": "@pipeline().parameters.Download_StorageBlobDirectory",
+										"type": "Expression"
+									},
+									"LookbackPeriod": {
+										"value": "@item()",
+										"type": "Expression"
+									},
+									"Shared_RI_FilenamePrefix": {
+										"value": "@concat(pipeline().parameters.Shared_RI_FilenamePrefix,item())",
+										"type": "Expression"
+									},
+									"Single_RI_FilenamePrefix": {
+										"value": "@concat(pipeline().parameters.Single_RI_FilenamePrefix,item())",
+										"type": "Expression"
+									},
+									"scope": {
+										"value": "@pipeline().parameters.scope",
+										"type": "Expression"
+									},
+									"ConsumptionAPIVersion": {
+										"value": "@pipeline().parameters.ConsumptionAPIVersion",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "MergeRIRecommendations",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "ForEachLookbackPeriod",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true,
+							"wildcardFolderPath": {
+								"value": "@pipeline().parameters.Download_StorageBlobDirectory",
+								"type": "Expression"
+							},
+							"wildcardFileName": "*",
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"sink": {
+						"type": "JsonSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings",
+							"copyBehavior": "MergeFiles"
+						},
+						"formatSettings": {
+							"type": "JsonWriteSettings",
+							"filePattern": "arrayOfObjects"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "RIRecommendationsJson",
+						"type": "DatasetReference",
+						"parameters": {
+							"Container": {
+								"value": "@pipeline().globalParameters.costopt_Container",
+								"type": "Expression"
+							},
+							"StorageAccountName": {
+								"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "JsonDataset",
+						"type": "DatasetReference",
+						"parameters": {
+							"StorageAccountName": {
+								"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+								"type": "Expression"
+							},
+							"Container": {
+								"value": "@pipeline().globalParameters.costopt_Container",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@{pipeline().parameters.Download_StorageBlobDirectory}/merged",
+								"type": "Expression"
+							},
+							"FileName": {
+								"value": "@pipeline().parameters.DownloadTargetFilename",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "DeleteTargetFile",
+				"type": "Delete",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:01:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "AubiBinaryFile",
+						"type": "DatasetReference",
+						"parameters": {
+							"StorageAccountName": {
+								"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+								"type": "Expression"
+							},
+							"Container": {
+								"value": "@pipeline().globalParameters.costopt_Container",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@{pipeline().parameters.Download_StorageBlobDirectory}/merged",
+								"type": "Expression"
+							},
+							"FIleName": {
+								"value": "@pipeline().parameters.DownloadTargetFilename",
+								"type": "Expression"
+							}
+						}
+					},
+					"enableLogging": false,
+					"storeSettings": {
+						"type": "AzureBlobStorageReadSettings",
+						"recursive": false,
+						"enablePartitionDiscovery": false
+					}
+				}
+			}
+		],
+		"parameters": {
+			"Download_StorageBlobDirectory": {
+				"type": "string",
+				"defaultValue": "download/resrecommendations"
+			},
+			"DownloadTargetFilename": {
+				"type": "string",
+				"defaultValue": "reservation_recs_merged.json"
+			},
+			"Shared_RI_FilenamePrefix": {
+				"type": "string",
+				"defaultValue": "Shared_RI_Recommendation"
+			},
+			"Single_RI_FilenamePrefix": {
+				"type": "string",
+				"defaultValue": "Single_RI_Recommendation"
+			},
+			"scope": {
+				"type": "string",
+				"defaultValue": "providers/Microsoft.Billing/billingAccounts/<BillingAccountNum>"
+			},
+			"ConsumptionAPIVersion": {
+				"type": "string",
+				"defaultValue": "2021-10-01"
+			}
+		},
+		"folder": {
+			"name": "ReservationRecommendations"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-10-19T16:23:11Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

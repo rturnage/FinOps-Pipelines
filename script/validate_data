@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+######################################################
+# Validate billing data. Calculate Total Cost and row
+# count.
+# Globals:
+#   LOCAL_BILLING_LOOKUP_PATH path to lookup files.
+#   LOCAL_BILLING_TEST_DATA_PATH path to local billing files
+#
+# Params
+# --cost_type Cost type files (actual, amortized)
+# --month Monthly data to copy (202101, 202311)
+# --use_sample Check sample folder. default false
+######################################################
+echo starting script
+
+# Stop on errors
+set -e
+
+## Globals
+PROJ_ROOT_PATH=$(cd "$(dirname "$0")"/..; pwd)
+echo "Project root: $PROJ_ROOT_PATH"
+
+echo "loading env variables"
+ENV_VARS="$(awk '!/^\s*#/' "${PROJ_ROOT_PATH}/.env" | awk '!/^\s*$/')"
+eval "$(
+  printf '%s\n' "$ENV_VARS" | while IFS='' read -r line; do
+    key=$(printf '%s\n' "$line"| sed 's/"/\\"/g' | cut -d '=' -f 1)
+    value=$(printf '%s\n' "$line" | cut -d '=' -f 2- | sed 's/"/\\\"/g' | tr -d '\f\r')
+    printf '%s\n' "export $key=\"$value\""
+  done
+)"
+
+# Parse params
+while [ $# -gt 0 ]; do
+    if [[ $1 == *"--"* ]]; then
+      param="${1/--/}"
+      declare "$param"="$2"
+    fi
+    shift
+done
+
+# set defaults
+if [[ -z "$cost_type" ]]; then cost_type="actual"; fi
+if [[ -z "$month" ]]; then month="202301"; fi
+if [[ -z "$use_sample" ]]; then use_sample=false; fi
+
+echo "Validate data for $cost_type, $month, use_sample:$use_sample."
+
+if [[ "$cost_type" == "actual" ]]; then
+    lookup_file="actual_cost_files"
+fi
+
+if [[ "$cost_type" == "amortized" ]]; then
+    lookup_file="amortized_cost_files"
+fi
+
+lookup_file_path="${PROJ_ROOT_PATH}/${LOCAL_BILLING_LOOKUP_PATH}/${lookup_file}"
+
+printf "Lookup standard file_name in %s\n" "$lookup_file_path"
+standard_file_name=$(grep "$month" "$lookup_file_path" | tr -d '\f\r')
+
+if [[ -z "$standard_file_name" ]]; then
+    printf 'Standard file not found in %s for %s and %s\n' "${lookup_file_path}" "${cost_type}" "${month}" >&2
+    exit 1
+fi
+
+# find local version for look_up file
+search_path="${PROJ_ROOT_PATH}/${LOCAL_BILLING_TEST_DATA_PATH}/*/*.csv"
+if [[ -z "${use_sample+x}" ]]; then
+    search_path="${PROJ_ROOT_PATH}/${LOCAL_BILLING_TEST_DATA_PATH}/samples/*/*.csv"
+fi
+
+printf "Find local versioned file for %s in %s\n" "$standard_file_name" "$search_path"
+# shellcheck disable=SC2086
+src_file_path=$(find $search_path -type f -exec readlink -f {} \; | grep "${standard_file_name}" | tr -d  '\f\r')
+
+if [[ -z "$src_file_path" ]]; then
+    printf 'No local versioned file found in %s for %s\n' "${search_path}" "${standard_file_name}" >&2
+    exit 1
+fi
+
+file_size=$(du -kh "$src_file_path" | cut -f1)
+
+root_path=$PROJ_ROOT_PATH/
+root_path_len=${#root_path}
+echo "Summarize data for (${file_size}) ./${src_file_path: $root_path_len} ..."
+
+results=$(mawk -F',' '{sum += $18 } END{ printf "%.2f,%.0f\n", sum, NR -1 }' "$src_file_path" | tr -d  '\f\r')
+cost_part=$(cut -d ',' -f 1 <<< "$results" )
+row_count_part=$(cut -d ',' -f 2 <<< "$results" )
+
+timestamp() {
+  date +"%T" # current time
+}
+
+printf "results: %-10s %-10s %-15s %-10s %s\n" "$cost_type" "$month" "$cost_part" "$row_count_part" "$src_file_path"
+printf "%s bash INFO results: %-10s %-10s %-15s %-10s %s\n" "$(date '+%Y-%m-%d %T,%3N')" "$cost_type" "$month" "$cost_part" "$row_count_part" "$src_file_path" >> "${root_path}/validate_data.log"

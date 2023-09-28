@@ -1,0 +1,844 @@
+{
+	"name": "CreateAndRunUsageExport",
+	"properties": {
+		"activities": [
+			{
+				"name": "GetClientId",
+				"description": "Retrieve ClientId from Keyvault",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:05:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": true,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_clientId_secretname}?api-version=7.0",
+						"type": "Expression"
+					},
+					"method": "GET",
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://vault.azure.net"
+					}
+				}
+			},
+			{
+				"name": "GetTenantId",
+				"description": "Retrieve TenantId from Keyvault",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:05:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": true,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_tenantid_secretname}?api-version=7.0",
+						"type": "Expression"
+					},
+					"method": "GET",
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://vault.azure.net"
+					}
+				}
+			},
+			{
+				"name": "CreateExport",
+				"description": "Make a call to the ExportAPI to export usage details for a date range specified by pipeline params.",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "DeleteNamedExport_Pre",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.00:02:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 60,
+					"secureOutput": false,
+					"secureInput": true
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "@concat('https://management.azure.com/', pipeline().parameters.scope, '/providers/Microsoft.CostManagement/exports/',pipeline().parameters.exportName,'?api-version=',pipeline().parameters.CostManagementApiVersion)",
+						"type": "Expression"
+					},
+					"method": "PUT",
+					"body": {
+						"value": "@variables('body')",
+						"type": "Expression"
+					},
+					"authentication": {
+						"type": "ServicePrincipal",
+						"userTenant": {
+							"value": "@activity('GetTenantId').output.value",
+							"type": "Expression"
+						},
+						"username": {
+							"value": "@activity('GetClientId').output.value",
+							"type": "Expression"
+						},
+						"resource": "https://management.azure.com",
+						"password": {
+							"type": "AzureKeyVaultSecret",
+							"store": {
+								"referenceName": "aubiKeyVault",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"KeyVaultName": {
+										"value": "@pipeline().globalParameters.costopt_KeyVaultName",
+										"type": "Expression"
+									}
+								}
+							},
+							"secretName": {
+								"value": "@pipeline().globalParameters.costopt_clientsecret_secretname",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "DeleteNamedExport_Post",
+				"description": "Make a call to the ExportAPI to delete the named export",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "PollUntilExportComplete",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.00:02:00",
+					"retry": 5,
+					"retryIntervalInSeconds": 60,
+					"secureOutput": false,
+					"secureInput": true
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "@concat('https://management.azure.com/', pipeline().parameters.scope, '/providers/Microsoft.CostManagement/exports/',pipeline().parameters.exportName,'?api-version=',pipeline().parameters.CostManagementApiVersion)",
+						"type": "Expression"
+					},
+					"method": "DELETE",
+					"body": "x",
+					"authentication": {
+						"type": "ServicePrincipal",
+						"userTenant": {
+							"value": "@activity('GetTenantId').output.value",
+							"type": "Expression"
+						},
+						"username": {
+							"value": "@activity('GetClientId').output.value",
+							"type": "Expression"
+						},
+						"resource": "https://management.azure.com",
+						"password": {
+							"type": "AzureKeyVaultSecret",
+							"store": {
+								"referenceName": "aubiKeyVault",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"KeyVaultName": {
+										"value": "@pipeline().globalParameters.costopt_KeyVaultName",
+										"type": "Expression"
+									}
+								}
+							},
+							"secretName": {
+								"value": "@pipeline().globalParameters.costopt_clientsecret_secretname",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "PollUntilExportComplete",
+				"type": "Until",
+				"dependsOn": [
+					{
+						"activity": "CreateExport",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@not(equals(variables('PollingStatus'),'WAIT'))",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "GetExportRunStatus",
+							"type": "WebActivity",
+							"dependsOn": [
+								{
+									"activity": "Wait For Export",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"url": {
+									"value": "@concat('https://management.azure.com/', pipeline().parameters.scope, '/providers/Microsoft.CostManagement/exports/',pipeline().parameters.exportName,'/runHistory?api-version=',pipeline().parameters.CostManagementApiVersion)",
+									"type": "Expression"
+								},
+								"method": "GET",
+								"authentication": {
+									"type": "ServicePrincipal",
+									"userTenant": {
+										"value": "@activity('GetTenantId').output.value",
+										"type": "Expression"
+									},
+									"username": {
+										"value": "@activity('GetClientId').output.value",
+										"type": "Expression"
+									},
+									"resource": "https://management.azure.com",
+									"password": {
+										"type": "AzureKeyVaultSecret",
+										"store": {
+											"referenceName": "aubiKeyVault",
+											"type": "LinkedServiceReference",
+											"parameters": {
+												"KeyVaultName": {
+													"value": "@pipeline().globalParameters.costopt_KeyVaultName",
+													"type": "Expression"
+												}
+											}
+										},
+										"secretName": {
+											"value": "@pipeline().globalParameters.costopt_clientsecret_secretname",
+											"type": "Expression"
+										}
+									}
+								}
+							}
+						},
+						{
+							"name": "Wait For Export",
+							"type": "Wait",
+							"dependsOn": [
+								{
+									"activity": "Set Status WAIT",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"waitTimeInSeconds": {
+									"value": "@pipeline().parameters.ExportStatusCheckLoopTime",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "UpdateExportRunStatus",
+							"type": "Switch",
+							"dependsOn": [
+								{
+									"activity": "GetExportRunStatus",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"on": {
+									"value": "@string(activity('GetExportRunStatus').output.value[0].properties.status)",
+									"type": "Expression"
+								},
+								"cases": [
+									{
+										"value": "Completed",
+										"activities": [
+											{
+												"name": "Set Status COMPLETED",
+												"type": "SetVariable",
+												"dependsOn": [],
+												"userProperties": [],
+												"typeProperties": {
+													"variableName": "PollingStatus",
+													"value": "COMPLETED"
+												}
+											},
+											{
+												"name": "Set Exported Filename",
+												"type": "SetVariable",
+												"dependsOn": [
+													{
+														"activity": "Set Status COMPLETED",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"userProperties": [],
+												"typeProperties": {
+													"variableName": "ExportedFilename",
+													"value": {
+														"value": "@string(activity('GetExportRunStatus').output.value[0].properties.fileName)",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									},
+									{
+										"value": "Failed",
+										"activities": [
+											{
+												"name": "Failed - Set Status FAILED",
+												"type": "SetVariable",
+												"dependsOn": [],
+												"userProperties": [],
+												"typeProperties": {
+													"variableName": "PollingStatus",
+													"value": "FAILED"
+												}
+											},
+											{
+												"name": "Failed - Increment Failure Count Temp Variable",
+												"type": "SetVariable",
+												"dependsOn": [
+													{
+														"activity": "Failed - Set Status FAILED",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"userProperties": [],
+												"typeProperties": {
+													"variableName": "TempRetries",
+													"value": {
+														"value": "@string(add(int(variables('ExportExecutionRetries')), 1))",
+														"type": "Expression"
+													}
+												}
+											},
+											{
+												"name": "Failed - Increment Failure Count",
+												"type": "SetVariable",
+												"dependsOn": [
+													{
+														"activity": "Failed - Increment Failure Count Temp Variable",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"userProperties": [],
+												"typeProperties": {
+													"variableName": "ExportExecutionRetries",
+													"value": {
+														"value": "@variables('TempRetries')",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									},
+									{
+										"value": "Timeout",
+										"activities": [
+											{
+												"name": "Timeout - Set Status FAILED",
+												"type": "SetVariable",
+												"dependsOn": [],
+												"userProperties": [],
+												"typeProperties": {
+													"variableName": "PollingStatus",
+													"value": "FAILED"
+												}
+											},
+											{
+												"name": "Timeout - Increment Failure Count",
+												"type": "SetVariable",
+												"dependsOn": [
+													{
+														"activity": "Timeout - Increment Failure Count Temp Variable",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"userProperties": [],
+												"typeProperties": {
+													"variableName": "TempRetries",
+													"value": {
+														"value": "@string(add(int(variables('ExportExecutionRetries')), 1))",
+														"type": "Expression"
+													}
+												}
+											},
+											{
+												"name": "Timeout - Increment Failure Count Temp Variable",
+												"type": "SetVariable",
+												"dependsOn": [
+													{
+														"activity": "Timeout - Set Status FAILED",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"userProperties": [],
+												"typeProperties": {
+													"variableName": "TempRetries",
+													"value": {
+														"value": "@string(add(int(variables('ExportExecutionRetries')), 1))",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									},
+									{
+										"value": "DataNotAvailable",
+										"activities": [
+											{
+												"name": "Data Not Avail - Set Status FAILED",
+												"type": "SetVariable",
+												"dependsOn": [],
+												"userProperties": [],
+												"typeProperties": {
+													"variableName": "PollingStatus",
+													"value": "FAILED"
+												}
+											},
+											{
+												"name": "Data Not Avail - Increment Failure Count",
+												"type": "SetVariable",
+												"dependsOn": [
+													{
+														"activity": "Data Not Avail - Increment Failure Count Temp Variable",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"userProperties": [],
+												"typeProperties": {
+													"variableName": "TempRetries",
+													"value": {
+														"value": "@string(add(int(variables('ExportExecutionRetries')), 1))",
+														"type": "Expression"
+													}
+												}
+											},
+											{
+												"name": "Data Not Avail - Increment Failure Count Temp Variable",
+												"type": "SetVariable",
+												"dependsOn": [
+													{
+														"activity": "Data Not Avail - Set Status FAILED",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"userProperties": [],
+												"typeProperties": {
+													"variableName": "ExportExecutionRetries",
+													"value": {
+														"value": "@variables('TempRetries')",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									},
+									{
+										"value": "NewDataNotAvailable",
+										"activities": [
+											{
+												"name": "NewDataNotAvail - Set Status FAILED",
+												"type": "SetVariable",
+												"dependsOn": [],
+												"userProperties": [],
+												"typeProperties": {
+													"variableName": "PollingStatus",
+													"value": "FAILED"
+												}
+											},
+											{
+												"name": "NewDataNotAvail - Increment Failure Count",
+												"type": "SetVariable",
+												"dependsOn": [
+													{
+														"activity": "NewDataNotAvail - Increment Failure Count Temp Variable",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"userProperties": [],
+												"typeProperties": {
+													"variableName": "TempRetries",
+													"value": {
+														"value": "@string(add(int(variables('ExportExecutionRetries')), 1))",
+														"type": "Expression"
+													}
+												}
+											},
+											{
+												"name": "NewDataNotAvail - Increment Failure Count Temp Variable",
+												"type": "SetVariable",
+												"dependsOn": [
+													{
+														"activity": "NewDataNotAvail - Set Status FAILED",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"userProperties": [],
+												"typeProperties": {
+													"variableName": "ExportExecutionRetries",
+													"value": {
+														"value": "@variables('TempRetries')",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									}
+								]
+							}
+						},
+						{
+							"name": "Set Status WAIT",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "CheckExecuteExport",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "PollingStatus",
+								"value": "WAIT"
+							}
+						},
+						{
+							"name": "CheckExecuteExport",
+							"type": "IfCondition",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@and(or(equals(variables('PollingStatus'),'NOTSTARTED'),equals(variables('PollingStatus'),'FAILED')),lessOrEquals(int(variables('ExportExecutionRetries')),int(pipeline().parameters.MaxExportExecutionRetries)))",
+									"type": "Expression"
+								},
+								"ifTrueActivities": [
+									{
+										"name": "RunNamedExport",
+										"description": "Make a call to the ExportAPI to export usage details for a date range specified by pipeline params.",
+										"type": "WebActivity",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.00:02:00",
+											"retry": 5,
+											"retryIntervalInSeconds": 60,
+											"secureOutput": false,
+											"secureInput": true
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"url": {
+												"value": "@concat('https://management.azure.com/', pipeline().parameters.scope, '/providers/Microsoft.CostManagement/exports/',pipeline().parameters.exportName,'/run?api-version=',pipeline().parameters.CostManagementApiVersion)",
+												"type": "Expression"
+											},
+											"method": "POST",
+											"body": "x",
+											"authentication": {
+												"type": "ServicePrincipal",
+												"userTenant": {
+													"value": "@activity('GetTenantId').output.value",
+													"type": "Expression"
+												},
+												"username": {
+													"value": "@activity('GetClientId').output.value",
+													"type": "Expression"
+												},
+												"resource": "https://management.azure.com",
+												"password": {
+													"type": "AzureKeyVaultSecret",
+													"store": {
+														"referenceName": "aubiKeyVault",
+														"type": "LinkedServiceReference",
+														"parameters": {
+															"KeyVaultName": {
+																"value": "@pipeline().globalParameters.costopt_KeyVaultName",
+																"type": "Expression"
+															}
+														}
+													},
+													"secretName": {
+														"value": "@pipeline().globalParameters.costopt_clientsecret_secretname",
+														"type": "Expression"
+													}
+												}
+											}
+										}
+									}
+								]
+							}
+						}
+					],
+					"timeout": "0.01:00:00"
+				}
+			},
+			{
+				"name": "DeleteNamedExport_Pre",
+				"description": "Make a call to the ExportAPI to delete the named export",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "SetExportAPIBody",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.00:02:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": true
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "@concat('https://management.azure.com/', pipeline().parameters.scope, '/providers/Microsoft.CostManagement/exports/',pipeline().parameters.exportName,'?api-version=',pipeline().parameters.CostManagementApiVersion)",
+						"type": "Expression"
+					},
+					"method": "DELETE",
+					"body": "x",
+					"authentication": {
+						"type": "ServicePrincipal",
+						"userTenant": {
+							"value": "@activity('GetTenantId').output.value",
+							"type": "Expression"
+						},
+						"username": {
+							"value": "@activity('GetClientId').output.value",
+							"type": "Expression"
+						},
+						"resource": "https://management.azure.com",
+						"password": {
+							"type": "AzureKeyVaultSecret",
+							"store": {
+								"referenceName": "aubiKeyVault",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"KeyVaultName": {
+										"value": "@pipeline().globalParameters.costopt_KeyVaultName",
+										"type": "Expression"
+									}
+								}
+							},
+							"secretName": {
+								"value": "@pipeline().globalParameters.costopt_clientsecret_secretname",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "SetExportAPIBody",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "SetStorageAcctResourcePath",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "GetTenantId",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "GetClientId",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "body",
+					"value": {
+						"value": "@concat(\n'{\"properties\": {\"schedule\": {\"status\": \"Inactive\",},\"format\": \"Csv\",\"deliveryInfo\": {\"destination\":{\"resourceId\":\"'\n, variables('StorageAccountResourcePath')\n,'\",\"container\": \"'\n,pipeline().globalParameters.costopt_Container\n,'\",\"rootFolderPath\": \"'\n,pipeline().parameters.UsageDownload_StorageBlobDirectory\n,'\"}},\"definition\": {\"type\": \"'\n,pipeline().parameters.ExportType\n,'\",\"timeframe\": \"'\n,pipeline().parameters.ExportTimeframe\n,'\",'\n,if(equals(pipeline().parameters.ExportTimeframe,'Custom'),concat('\"timePeriod\":{\"from\":\"',pipeline().parameters.StartDate,'\",\"to\":\"',pipeline().parameters.EndDate,'\"},'),'')\n,'\"dataSet\": {\"granularity\": \"Daily\"}}}}'\n)",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "SetStorageAcctResourcePath",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "StorageAccountResourcePath",
+					"value": {
+						"value": "/subscriptions/@{pipeline().globalParameters.costopt_StorageAccountSubscriptionId}/resourceGroups/@{pipeline().globalParameters.costopt_ResourceGroupName}/providers/Microsoft.Storage/storageAccounts/@{pipeline().globalParameters.costopt_StorageAccountName}",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "LoadUsageFileToDatabase",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "DeleteNamedExport_Post",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "LoadConsumptionDataToDatabase",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"TargetSchemaName": "costmanagement",
+						"TargetTableName": {
+							"value": "@if(equals(pipeline().parameters.ExportType,'ActualCost'),'ActualCost','AmortizedCost')",
+							"type": "Expression"
+						},
+						"StartDate": {
+							"value": "@pipeline().parameters.StartDate",
+							"type": "Expression"
+						},
+						"EndDate": {
+							"value": "@pipeline().parameters.EndDate",
+							"type": "Expression"
+						},
+						"UsageDownload_Filename": {
+							"value": "@variables('ExportedFilename')",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"exportName": {
+				"type": "string",
+				"defaultValue": "msftExportUsageTemp"
+			},
+			"scope": {
+				"type": "string",
+				"defaultValue": "providers/Microsoft.Billing/billingAccounts/<BillingAccountNum>"
+			},
+			"CostManagementApiVersion": {
+				"type": "string",
+				"defaultValue": "2021-01-01"
+			},
+			"UsageDownload_StorageBlobDirectory": {
+				"type": "string",
+				"defaultValue": "download/usage"
+			},
+			"MaxExportExecutionRetries": {
+				"type": "int",
+				"defaultValue": 3
+			},
+			"StartDate": {
+				"type": "string",
+				"defaultValue": "2021-09-01"
+			},
+			"EndDate": {
+				"type": "string",
+				"defaultValue": "2021-09-02"
+			},
+			"ExportTimeframe": {
+				"type": "string",
+				"defaultValue": "Custom"
+			},
+			"ExportType": {
+				"type": "string",
+				"defaultValue": "ActualCost"
+			},
+			"ExportStatusCheckLoopTime": {
+				"type": "int",
+				"defaultValue": 60
+			}
+		},
+		"variables": {
+			"PollingStatus": {
+				"type": "String",
+				"defaultValue": "NOTSTARTED"
+			},
+			"ExportExecutionRetries": {
+				"type": "String",
+				"defaultValue": "0"
+			},
+			"TempRetries": {
+				"type": "String",
+				"defaultValue": "0"
+			},
+			"ExportedFilename": {
+				"type": "String"
+			},
+			"body": {
+				"type": "String"
+			},
+			"StorageAccountResourcePath": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "UsageData"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-09-23T00:37:08Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

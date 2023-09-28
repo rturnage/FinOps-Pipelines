@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+###################################################################
+# Apply exported arm template to pipeline folder
+# Globals
+#   DOWNLOAD_PATH
+#   PIPELINE_ADF_PROD_TEMPLATE_PATH folder containing prod arm templates
+#   PIPELINE_ADF_PATCH_TEMPLATE_PATH folder containing patch arm templates
+#   PIPELINE_ADF_TEMPLATE_NAME arm template name
+#   PIPELINE_ADF_TEMPLATE_PARAMETER_NAME arm parameter file name
+#
+# Params
+#   FileName found in download folder. Example: arm_template.2023.05.1.zip
+#   Environment prod or dev. Default is dev.
+###################################################################
+
+# Stop on errors
+set -e
+
+printf 'Running %s with args %s\n' "$0" "$*"
+
+## Globals
+PROJ_ROOT_PATH=$(cd "$(dirname "$0")"/..; pwd)
+echo "root folder: $PROJ_ROOT_PATH"
+TEMP_PATH="${PROJ_ROOT_PATH}/temp/arm"
+echo "Temp folder: $TEMP_PATH"
+
+echo "loading env variables"
+ENV_VARS="$(awk '!/^\s*#/' "${PROJ_ROOT_PATH}/.env" | awk '!/^\s*$/')"
+eval "$(
+  printf '%s\n' "$ENV_VARS" | while IFS='' read -r line; do
+    key=$(printf '%s\n' "$line"| sed 's/"/\\"/g' | cut -d '=' -f 1)
+    value=$(printf '%s\n' "$line" | cut -d '=' -f 2- | sed 's/"/\\\"/g' | tr -d '\f\r')
+    printf '%s\n' "export $key=\"$value\""
+  done
+)"
+
+env_name="dev"
+
+# Validate params
+if [[ -z "$1" ]]; then
+    echo "File is required: ./apply_arm_export arm_template.zip prod"
+    exit 1
+fi
+
+if [[ -n "$2" ]]; then
+    env_name=$2
+fi
+
+file_path=$1
+
+if [[ "$env_name" == "prod" ]]; then
+    pipeline_path="${PROJ_ROOT_PATH}${PIPELINE_ADF_PROD_TEMPLATE_PATH}"
+elif [[ "$env_name" == "dev" ]]; then
+    pipeline_path="${PROJ_ROOT_PATH}${PIPELINE_ADF_PATCH_TEMPLATE_PATH}"
+else
+    echo "Unknown environment ${env_name}. ./apply_arm_export arm_template.zip prod"
+    exit 1
+fi
+
+# Copy and Unzip to Temp
+echo "Copy ${DOWNLOAD_PATH}/${file_path} to folder ${TEMP_PATH}."
+rm -Rf "${TEMP_PATH}"
+mkdir -p "${TEMP_PATH}"
+
+# X retain user/group, K retain file attributes, o overwrite existing
+unzip -XK "${DOWNLOAD_PATH}/${file_path}" -d "${TEMP_PATH}/${file_path}"
+old_dir=$(pwd)
+cd "${TEMP_PATH}/${file_path}"
+
+echo "Format template file $PIPELINE_ADF_TEMPLATE_NAME."
+lookup_file=$(python "${PROJ_ROOT_PATH}/script/format_json.py" --file "${TEMP_PATH}/${file_path}/${PIPELINE_ADF_TEMPLATE_NAME}")
+echo "Format template file $PIPELINE_ADF_TEMPLATE_PARAMETER_NAME."
+python "${PROJ_ROOT_PATH}/script/format_json.py" --file "${TEMP_PATH}/${file_path}/${PIPELINE_ADF_TEMPLATE_PARAMETER_NAME}" --parameters "$lookup_file"
+
+echo "Update pipeline arm template files"
+echo "cp ${TEMP_PATH}/${file_path}/${PIPELINE_ADF_TEMPLATE_NAME} ${pipeline_path}/${PIPELINE_ADF_TEMPLATE_NAME}"
+cp "${TEMP_PATH}/${file_path}/${PIPELINE_ADF_TEMPLATE_NAME}" "${pipeline_path}/${PIPELINE_ADF_TEMPLATE_NAME}"
+echo "cp ${TEMP_PATH}/${file_path}/${PIPELINE_ADF_TEMPLATE_PARAMETER_NAME} ${pipeline_path}/${PIPELINE_ADF_TEMPLATE_PARAMETER_NAME}"
+cp "${TEMP_PATH}/${file_path}/${PIPELINE_ADF_TEMPLATE_PARAMETER_NAME}" "${pipeline_path}/${PIPELINE_ADF_TEMPLATE_PARAMETER_NAME}"
+
+cd "$old_dir"
+echo "Done applying arm export"

@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+######################################################
+# Pipeline patch for Issue #35 duplicate data.
+# Deploy test pipeline
+#
+# Globals
+#   PIPELINE_ADF_PATCH_TEMPLATE_PATH path to arm template
+#   PIPELINE_ADF_TEMPLATE_NAME template name
+#   PIPELINE_ADF_TEMPLATE_PARAMETER_NAME template parameter name
+#   PIPELINE_ADF_PATCH_RG resource group for pipeline
+######################################################
+
+echo "Deploying ${BASH_SOURCE[0]}"
+
+show_msg(){
+  if [[ "$DEBUG" == "true" ]]; then
+    if [[ -z "$1" ]]; then exit; fi
+    echo "$1"
+    echo
+  fi
+}
+
+# shellcheck disable=SC2164
+PROJ_ROOT_PATH=$(cd "$(dirname "$0")"/../..; pwd)
+echo "root folder: $PROJ_ROOT_PATH"
+
+echo "loading env variables"
+ENV_VARS="$(awk '!/^\s*#/' "${PROJ_ROOT_PATH}/.env" | awk '!/^\s*$/')"
+eval "$(
+  printf '%s\n' "$ENV_VARS" | while IFS='' read -r line; do
+    key=$(printf '%s\n' "$line"| sed 's/"/\\"/g' | cut -d '=' -f 1)
+    value=$(printf '%s\n' "$line" | cut -d '=' -f 2- | sed 's/"/\\\"/g' | tr -d '\f\r')
+    printf '%s\n' "export $key=\"$value\""
+  done
+)"
+
+# Get Version
+version_file_path="${PROJ_ROOT_PATH}/version_code.txt"
+if [[ -f "$version_file_path" ]]; then
+  version_string=$(grep "VERSION" "${version_file_path}"  | cut -d ":" -f 2 | cut -d "." --fields="1 2 3 4"  | sed 's/"//g' | tr -d '[:blank:]\f\r')
+  version_hash=$(grep "HASH" "${version_file_path}"  | cut -d ":" -f 2 | sed 's/"//g' | tr -d '[:blank:]\f\r')
+else
+  version_and_hash=$("${PROJ_ROOT_PATH}/script/get_version_no")
+  version_string=$(echo "$version_and_hash" | cut -d " " -f 1)
+  version_hash=$(echo "$version_and_hash" | cut -d " " -f 2)
+fi
+
+template_file_path="${PROJ_ROOT_PATH}${PIPELINE_ADF_PATCH_TEMPLATE_PATH}/${PIPELINE_ADF_TEMPLATE_NAME}"
+template_parameter_file_path="${PROJ_ROOT_PATH}${PIPELINE_ADF_PATCH_TEMPLATE_PATH}/${PIPELINE_ADF_TEMPLATE_PARAMETER_NAME}"
+update_template_file_path=${template_file_path%.*}.updated.json
+update_parameter_file_path=${template_parameter_file_path%.*}.updated.json
+
+show_msg "Replace placeholders with env values"
+
+# Update Template
+show_msg "Command: cp ${template_file_path} ${update_template_file_path}"
+cp "${template_file_path}" "${update_template_file_path}"
+
+# Update resource names
+show_msg "Command: sed -i -e \"s/<replace_with_patch_version>/_${version_string}/\" ${update_template_file_path}"
+sed -i -e "s/<replace_with_patch_version>/_${version_string}/" "${update_template_file_path}"
+show_msg "Command: sed -i -e \"s/<replace_with_version_hash>/_${version_hash}/\" ${update_template_file_path}"
+sed -i -e "s/<replace_with_version_hash>/_${version_hash}/" "${update_template_file_path}"
+
+# Update Parameter file
+show_msg "Command: jq \".parameters.factoryName.value=\\\"${PIPELINE_ADF_NAME}\\\"\" $template_parameter_file_path > ${update_parameter_file_path}"
+jq ".parameters.factoryName.value=\"${PIPELINE_ADF_NAME}\"" "$template_parameter_file_path" > "${update_parameter_file_path}"
+show_msg "Command: sed -i -e \"s/<replace_with_version_hash>/_${version_hash}/\" ${update_parameter_file_path}"
+sed -i -e "s/<replace_with_version_hash>/_${version_hash}/" "${update_parameter_file_path}"
+
+show_msg "Update ${PIPELINE_ADF_NAME} in ${PIPELINE_ADF_PATCH_RG} to $version_string"
+show_msg Command: az deployment group create --resource-group "${PIPELINE_ADF_PATCH_RG}" --template-file "${update_template_file_path}" --parameters "${update_parameter_file_path}"
+az deployment group create --name "PatchDeployment.$version_hash" --resource-group "${PIPELINE_ADF_PATCH_RG}" --template-file "${update_template_file_path}" --parameters "${update_parameter_file_path}"
+
+retVal=$?
+if [[ $retVal -ne 0 ]]; then
+  echo
+  echo "Failed deploying ${PIPELINE_ADF_NAME} in ${PIPELINE_ADF_PATCH_RG} to $version_string $version_hash"
+else
+  echo
+  echo "Done deploying ${PIPELINE_ADF_NAME} in ${PIPELINE_ADF_PATCH_RG} to $version_string $version_hash"
+fi

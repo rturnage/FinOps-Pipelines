@@ -1,0 +1,12 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "AubiSQLDatabase_connectionString": {
+            "value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=@{linkedService().servername}.database.windows.net;Initial Catalog=@{linkedService().databasename}"
+        },
+        "factoryName": {
+            "value": "CostManagementPatch"
+        }
+    }
+}

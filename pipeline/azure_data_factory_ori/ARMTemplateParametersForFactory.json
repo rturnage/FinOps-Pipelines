@@ -1,0 +1,104 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "aubiazurestorage_properties_typeproperties_serviceendpoint": {
+            "value": "@concat('https://',linkedService().StorageAccountName,'.blob.core.windows.net')"
+        },
+        "aubikeyvault_properties_typeproperties_baseurl": {
+            "value": "https://@{linkedService().KeyVaultName}.vault.azure.net/"
+        },
+        "aubisqldatabase_connectionstring": {
+            "value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=@{linkedService().servername}.database.windows.net;Initial Catalog=@{linkedService().databasename}"
+        },
+        "azuremanagementapi_properties_typeproperties_aadresourceid": {
+            "value": "https://management.azure.com/"
+        },
+        "azuremanagementapi_properties_typeproperties_serviceprincipalid": {
+            "value": "@{linkedService().servicePrincipalId}"
+        },
+        "azuremanagementapi_properties_typeproperties_tenant": {
+            "value": "@{linkedService().tenantId}"
+        },
+        "azuremanagementapi_properties_typeproperties_url": {
+            "value": "https://management.azure.com"
+        },
+        "datafactory_factoryname": {
+            "value": ""
+        },
+        "datafactory_identity_type": {
+            "value": "SystemAssigned"
+        },
+        "datafactory_location": {
+            "value": "westeurope"
+        },
+        "datafactory_properties_globalparameters_costopt_clientid_secretname_value": {
+            "value": "costopt-serviceprincipalclientid"
+        },
+        "datafactory_properties_globalparameters_costopt_clientsecret_secretname_value": {
+            "value": "costopt-serviceprincipalsecret"
+        },
+        "datafactory_properties_globalparameters_costopt_container_value": {
+            "value": "costopt"
+        },
+        "datafactory_properties_globalparameters_costopt_enrollmentnumber_value": {
+            "value": "123456"
+        },
+        "datafactory_properties_globalparameters_costopt_keyvaultname_value": {
+            "value": "costoptkeyvault0006"
+        },
+        "datafactory_properties_globalparameters_costopt_pricesheetsubscriptionid_value": {
+            "value": "SubId"
+        },
+        "datafactory_properties_globalparameters_costopt_resourcegroupname_value": {
+            "value": "rg-costopt"
+        },
+        "datafactory_properties_globalparameters_costopt_sqldbname_value": {
+            "value": "costoptsqldb"
+        },
+        "datafactory_properties_globalparameters_costopt_sqlservername_value": {
+            "value": "cfmsqlserver"
+        },
+        "datafactory_properties_globalparameters_costopt_storageaccountname_value": {
+            "value": "costoptstorage"
+        },
+        "datafactory_properties_globalparameters_costopt_storageaccountsubscriptionid_value": {
+            "value": "SubId"
+        },
+        "datafactory_properties_globalparameters_costopt_tenantid_secretname_value": {
+            "value": "costopt-tenantid"
+        },
+        "datafactory_properties_globalparameters_resreclookbackperiodsarray_value": {
+            "value": [
+                "Last7Days",
+                "Last30Days",
+                "Last60Days"
+            ]
+        },
+        "datafactory_properties_globalparameters_resrecservicesarray_value": {
+            "value": [
+                "VirtualMachines",
+                "SQLDatabases",
+                "PostgreSQL",
+                "ManagedDisk",
+                "MySQL",
+                "RedHat",
+                "MariaDB",
+                "RedisCache",
+                "CosmosDB",
+                "SqlDataWarehouse",
+                "SUSELinux",
+                "AppService",
+                "BlockBlob",
+                "AzureDataExplorer",
+                "VMwareCloudSimple"
+            ]
+        },
+        "factoryname": {
+            "value": "adf-cloud-financial-management"
+        },
+        "httpfile_properties_typeproperties_url": {
+            "value": "@{linkedService().FileURL}"
+        }
+    }
+}

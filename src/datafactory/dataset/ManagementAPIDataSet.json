@@ -1,0 +1,63 @@
+{
+	"name": "ManagementAPIDataSet",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureManagementAPI",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"servicePrincipalId": {
+					"value": "@dataset().servicePrincipalId",
+					"type": "Expression"
+				},
+				"servicePrincipalSecretKeyName": {
+					"value": "@dataset().servicePrincipalSecretKeyName",
+					"type": "Expression"
+				},
+				"tenantId": {
+					"value": "@dataset().tenantId",
+					"type": "Expression"
+				},
+				"KeyVaultName": {
+					"value": "@dataset().KeyVaultName",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"servicePrincipalId": {
+				"type": "string"
+			},
+			"servicePrincipalSecretKeyName": {
+				"type": "string"
+			},
+			"tenantId": {
+				"type": "string"
+			},
+			"scope": {
+				"type": "string"
+			},
+			"api": {
+				"type": "string"
+			},
+			"apiversion": {
+				"type": "string"
+			},
+			"filter": {
+				"type": "string"
+			},
+			"KeyVaultName": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "RestResource",
+		"typeProperties": {
+			"relativeUrl": {
+				"value": "@{dataset().scope}/@{dataset().api}?api-version=@{dataset().apiversion}@{dataset().filter}",
+				"type": "Expression"
+			}
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

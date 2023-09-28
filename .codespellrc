@@ -1,0 +1,5 @@
+[codespell]
+skip = ./.*,./venv,*.csv,*.pyc,./docs/_build/*,./htmlcov/*,./src/datafactory/downloads/main.js,./test/azure*,./temp
+count =
+quiet-level = 3
+ignore-words-list = wee

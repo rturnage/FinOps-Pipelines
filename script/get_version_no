@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+###################################################################
+# Get version number
+# parameters
+# -p, --pr_name=NAME Pull Request name to use in version
+# outputs
+#   version_no, revision_no, and version_hash
+###################################################################
+
+# Stop on errors
+set -e
+
+# Argument/Options
+LONGOPTS=pr_name:
+OPTIONS=p:
+
+# Variables
+pr_name=""
+
+## Globals
+PROJ_ROOT_PATH=$(cd "$(dirname "$0")"/..; pwd)
+# echo "root folder: $PROJ_ROOT_PATH"
+
+# Parse Arguments
+PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
+if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
+    # e.g. return value is 1
+    #  then getopt has complained about wrong arguments to stdout
+    exit 2
+fi
+eval set -- "$PARSED"
+
+while true; do
+    case "$1" in
+        -p|--pr_name)
+            pr_name="$2"
+            shift 2
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            echo "Bad args error"
+            exit 3
+            ;;
+    esac
+done
+
+project_file_path="${PROJ_ROOT_PATH}/pyproject.toml"
+
+short_date="$(date -u '+%m%d_%H%M')"
+branch_name=$(git rev-parse --abbrev-ref HEAD)
+branch_name=${branch_name/\//_}
+commit_hash=$(git rev-parse --short HEAD)
+short_version_no=$(grep "version" "${project_file_path}"  | cut -d "=" -f 2 | sed 's/"//g' | tr -d '[:blank:]\f\r')
+
+feature_name="$branch_name"
+if [[ -n "$pr_name" ]]; then
+    feature_name="pr_${pr_name}"
+fi
+
+version_no="azure_cfm.${short_version_no}"
+revision_no="${feature_name}.${short_date}.${commit_hash}"
+
+echo "${version_no} ${revision_no} ${commit_hash}"

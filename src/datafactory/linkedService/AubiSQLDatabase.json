@@ -1,0 +1,22 @@
+{
+	"name": "AubiSQLDatabase",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"description": "Billing datasets are written to this Azure SQL Database",
+		"parameters": {
+			"databasename": {
+				"type": "string",
+				"defaultValue": "aubisqldb"
+			},
+			"servername": {
+				"type": "string",
+				"defaultValue": "aubisqlserver"
+			}
+		},
+		"annotations": [],
+		"type": "AzureSqlDatabase",
+		"typeProperties": {
+			"connectionString": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=@{linkedService().servername}.database.windows.net;Initial Catalog=@{linkedService().databasename}"
+		}
+	}
+}

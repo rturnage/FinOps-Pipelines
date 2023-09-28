@@ -1,0 +1,1834 @@
+{
+	"name": "ProcessInboundUsageData",
+	"properties": {
+		"description": "This pipeline looks for any usage files created by a cost management export and loads them to the database",
+		"activities": [
+			{
+				"name": "LoadActualCostToSQL",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "ForEachActualCostChildItem",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.02:00:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true,
+							"wildcardFolderPath": {
+								"value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.ActualCostExportName}",
+								"type": "Expression"
+							},
+							"wildcardFileName": "*.csv"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "InvoiceSectionName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "InvoiceSectionName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "AccountName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "AccountName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "AccountOwnerId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "AccountOwnerId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "SubscriptionId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "SubscriptionId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "SubscriptionName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "SubscriptionName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ResourceGroup",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ResourceGroup",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ResourceLocation",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ResourceLocation",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Date",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Date",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "ProductName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ProductName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "MeterCategory",
+									"type": "String"
+								},
+								"sink": {
+									"name": "MeterCategory",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "MeterSubCategory",
+									"type": "String"
+								},
+								"sink": {
+									"name": "MeterSubCategory",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "MeterId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "MeterId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "MeterName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "MeterName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "MeterRegion",
+									"type": "String"
+								},
+								"sink": {
+									"name": "MeterRegion",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "UnitOfMeasure",
+									"type": "String"
+								},
+								"sink": {
+									"name": "UnitOfMeasure",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Quantity",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Quantity",
+									"type": "Decimal"
+								}
+							},
+							{
+								"source": {
+									"name": "EffectivePrice",
+									"type": "String"
+								},
+								"sink": {
+									"name": "EffectivePrice",
+									"type": "Decimal"
+								}
+							},
+							{
+								"source": {
+									"name": "CostInBillingCurrency",
+									"type": "String"
+								},
+								"sink": {
+									"name": "CostInBillingCurrency",
+									"type": "Decimal"
+								}
+							},
+							{
+								"source": {
+									"name": "CostCenter",
+									"type": "String"
+								},
+								"sink": {
+									"name": "CostCenter",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ConsumedService",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ConsumedService",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ResourceId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ResourceId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Tags",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Tags",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "OfferId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "OfferId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "AdditionalInfo",
+									"type": "String"
+								},
+								"sink": {
+									"name": "AdditionalInfo",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ServiceInfo1",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ServiceInfo1",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ServiceInfo2",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ServiceInfo2",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ResourceName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ResourceName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ReservationId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ReservationId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ReservationName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ReservationName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "UnitPrice",
+									"type": "String"
+								},
+								"sink": {
+									"name": "UnitPrice",
+									"type": "Decimal"
+								}
+							},
+							{
+								"source": {
+									"name": "ProductOrderId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ProductOrderId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ProductOrderName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ProductOrderName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Term",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Term",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "PublisherType",
+									"type": "String"
+								},
+								"sink": {
+									"name": "PublisherType",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "PublisherName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "PublisherName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ChargeType",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ChargeType",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Frequency",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Frequency",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "PricingModel",
+									"type": "String"
+								},
+								"sink": {
+									"name": "PricingModel",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "AvailabilityZone",
+									"type": "String"
+								},
+								"sink": {
+									"name": "AvailabilityZone",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "BillingAccountId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "BillingAccountId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "BillingAccountName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "BillingAccountName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "BillingCurrencyCode",
+									"type": "String"
+								},
+								"sink": {
+									"name": "BillingCurrencyCode",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "BillingPeriodStartDate",
+									"type": "String"
+								},
+								"sink": {
+									"name": "BillingPeriodStartDate",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "BillingPeriodEndDate",
+									"type": "String"
+								},
+								"sink": {
+									"name": "BillingPeriodEndDate",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "BillingProfileId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "BillingProfileId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "BillingProfileName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "BillingProfileName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "InvoiceSectionId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "InvoiceSectionId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "IsAzureCreditEligible",
+									"type": "String"
+								},
+								"sink": {
+									"name": "IsAzureCreditEligible",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "PartNumber",
+									"type": "String"
+								},
+								"sink": {
+									"name": "PartNumber",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "PayGPrice",
+									"type": "String"
+								},
+								"sink": {
+									"name": "PayGPrice",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "PlanName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "PlanName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ServiceFamily",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ServiceFamily",
+									"type": "String"
+								}
+							}
+						]
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "CSVFileDataset",
+						"type": "DatasetReference",
+						"parameters": {
+							"StorageAccount": {
+								"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+								"type": "Expression"
+							},
+							"Container": {
+								"value": "@pipeline().globalParameters.costopt_Container",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.ActualCostExportName}",
+								"type": "Expression"
+							},
+							"File": {
+								"value": "NOTUSED",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "costoptSQLTableDataset",
+						"type": "DatasetReference",
+						"parameters": {
+							"tablename": {
+								"value": "ActualCost",
+								"type": "Expression"
+							},
+							"schemaname": {
+								"value": "@pipeline().parameters.TargetSchemaName",
+								"type": "Expression"
+							},
+							"sqlservername": {
+								"value": "@pipeline().globalParameters.costopt_sqlservername",
+								"type": "Expression"
+							},
+							"sqldbname": {
+								"value": "@pipeline().globalParameters.costopt_sqldbname",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "DeleteActualCostExportFiles",
+				"type": "Delete",
+				"dependsOn": [
+					{
+						"activity": "LoadActualCostToSQL",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "AubiBinaryFile",
+						"type": "DatasetReference",
+						"parameters": {
+							"StorageAccountName": {
+								"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+								"type": "Expression"
+							},
+							"Container": {
+								"value": "@pipeline().globalParameters.costopt_Container",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.ActualCostExportName}",
+								"type": "Expression"
+							},
+							"FIleName": "NOTUSED"
+						}
+					},
+					"enableLogging": false,
+					"storeSettings": {
+						"type": "AzureBlobStorageReadSettings",
+						"recursive": true,
+						"wildcardFileName": "*",
+						"enablePartitionDiscovery": false
+					}
+				}
+			},
+			{
+				"name": "ForEachActualCostChildItem",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "GetActualCostFilesToProcess",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('GetActualCostFilesToProcess').output.childItems",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "IfActualCostChildIsFolder",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "SetActualCostDeleteStartDate",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								},
+								{
+									"activity": "SetActualCostDeleteEndDate",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@equals(item().type,'Folder')",
+									"type": "Expression"
+								},
+								"ifTrueActivities": [
+									{
+										"name": "DeleteActualCostData",
+										"type": "SqlServerStoredProcedure",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "7.00:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"storedProcedureName": "[costmanagement].[DeleteActualCostDataForDateRange]",
+											"storedProcedureParameters": {
+												"DateRangeEnd": {
+													"value": {
+														"value": "@variables('ActualCostDeleteEndDate')",
+														"type": "Expression"
+													},
+													"type": "DateTime"
+												},
+												"DateRangeStart": {
+													"value": {
+														"value": "@variables('ActualCostDeleteStartDate')",
+														"type": "Expression"
+													},
+													"type": "DateTime"
+												}
+											}
+										},
+										"linkedServiceName": {
+											"referenceName": "AubiSQLDatabase",
+											"type": "LinkedServiceReference",
+											"parameters": {
+												"databasename": {
+													"value": "@pipeline().globalParameters.costopt_sqldbname",
+													"type": "Expression"
+												},
+												"servername": {
+													"value": "@pipeline().globalParameters.costopt_sqlservername",
+													"type": "Expression"
+												}
+											}
+										}
+									}
+								]
+							}
+						},
+						{
+							"name": "SetActualCostDeleteStartDate",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "ActualCostDeleteStartDate",
+								"value": {
+									"value": "@{substring(item().name,0,4)}-@{substring(item().name,4,2)}-@{substring(item().name,6,2)}",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "SetActualCostDeleteEndDate",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "ActualCostDeleteEndDate",
+								"value": {
+									"value": "@{substring(item().name,9,4)}-@{substring(item().name,13,2)}-@{substring(item().name,15,2)}",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "GetActualCostFilesToProcess",
+				"type": "GetMetadata",
+				"dependsOn": [
+					{
+						"activity": "ManagePartitions",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "CSVFileDataset",
+						"type": "DatasetReference",
+						"parameters": {
+							"StorageAccount": {
+								"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+								"type": "Expression"
+							},
+							"Container": {
+								"value": "@pipeline().globalParameters.costopt_Container",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.ActualCostExportName}",
+								"type": "Expression"
+							},
+							"File": {
+								"value": "@trim('')",
+								"type": "Expression"
+							}
+						}
+					},
+					"fieldList": [
+						"childItems",
+						"exists"
+					],
+					"storeSettings": {
+						"type": "AzureBlobStorageReadSettings",
+						"recursive": true,
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "DelimitedTextReadSettings"
+					}
+				}
+			},
+			{
+				"name": "GetAmortizedCostFilesToProcess",
+				"type": "GetMetadata",
+				"dependsOn": [
+					{
+						"activity": "ManagePartitions",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "CSVFileDataset",
+						"type": "DatasetReference",
+						"parameters": {
+							"StorageAccount": {
+								"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+								"type": "Expression"
+							},
+							"Container": {
+								"value": "@pipeline().globalParameters.costopt_Container",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.AmortizedCostExportName}",
+								"type": "Expression"
+							},
+							"File": {
+								"value": "@trim('')",
+								"type": "Expression"
+							}
+						}
+					},
+					"fieldList": [
+						"childItems",
+						"exists"
+					],
+					"storeSettings": {
+						"type": "AzureBlobStorageReadSettings",
+						"recursive": true,
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "DelimitedTextReadSettings"
+					}
+				}
+			},
+			{
+				"name": "ForEachAmortizedCostChildItem",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "GetAmortizedCostFilesToProcess",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('GetAmortizedCostFilesToProcess').output.childItems",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "IfAmortizedCostChildIsFolder",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "SetAmortizedDeleteStartDate",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								},
+								{
+									"activity": "SetAmortizedDeleteEndDate",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@equals(item().type,'Folder')",
+									"type": "Expression"
+								},
+								"ifTrueActivities": [
+									{
+										"name": "DeleteAmortizedCostData",
+										"type": "SqlServerStoredProcedure",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "7.00:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"storedProcedureName": "[costmanagement].[DeleteAmortizedCostDataForDateRange]",
+											"storedProcedureParameters": {
+												"DateRangeEnd": {
+													"value": {
+														"value": "@variables('AmortizedCostDeleteEndDate')",
+														"type": "Expression"
+													},
+													"type": "DateTime"
+												},
+												"DateRangeStart": {
+													"value": {
+														"value": "@variables('AmortizedCostDeleteStartDate')",
+														"type": "Expression"
+													},
+													"type": "DateTime"
+												}
+											}
+										},
+										"linkedServiceName": {
+											"referenceName": "AubiSQLDatabase",
+											"type": "LinkedServiceReference",
+											"parameters": {
+												"databasename": {
+													"value": "@pipeline().globalParameters.costopt_sqldbname",
+													"type": "Expression"
+												},
+												"servername": {
+													"value": "@pipeline().globalParameters.costopt_sqlservername",
+													"type": "Expression"
+												}
+											}
+										}
+									}
+								]
+							}
+						},
+						{
+							"name": "SetAmortizedDeleteStartDate",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "AmortizedCostDeleteStartDate",
+								"value": {
+									"value": "@{substring(item().name,0,4)}-@{substring(item().name,4,2)}-@{substring(item().name,6,2)}",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "SetAmortizedDeleteEndDate",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "AmortizedCostDeleteEndDate",
+								"value": {
+									"value": "@{substring(item().name,9,4)}-@{substring(item().name,13,2)}-@{substring(item().name,15,2)}",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "LoadAmortizedCostToSQL",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "ForEachAmortizedCostChildItem",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.02:00:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true,
+							"wildcardFolderPath": {
+								"value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.AmortizedCostExportName}",
+								"type": "Expression"
+							},
+							"wildcardFileName": "*.csv"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "InvoiceSectionName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "InvoiceSectionName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "AccountName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "AccountName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "AccountOwnerId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "AccountOwnerId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "SubscriptionId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "SubscriptionId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "SubscriptionName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "SubscriptionName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ResourceGroup",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ResourceGroup",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ResourceLocation",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ResourceLocation",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Date",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Date",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "ProductName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ProductName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "MeterCategory",
+									"type": "String"
+								},
+								"sink": {
+									"name": "MeterCategory",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "MeterSubCategory",
+									"type": "String"
+								},
+								"sink": {
+									"name": "MeterSubCategory",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "MeterId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "MeterId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "MeterName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "MeterName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "MeterRegion",
+									"type": "String"
+								},
+								"sink": {
+									"name": "MeterRegion",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "UnitOfMeasure",
+									"type": "String"
+								},
+								"sink": {
+									"name": "UnitOfMeasure",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Quantity",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Quantity",
+									"type": "Decimal"
+								}
+							},
+							{
+								"source": {
+									"name": "EffectivePrice",
+									"type": "String"
+								},
+								"sink": {
+									"name": "EffectivePrice",
+									"type": "Decimal"
+								}
+							},
+							{
+								"source": {
+									"name": "CostInBillingCurrency",
+									"type": "String"
+								},
+								"sink": {
+									"name": "CostInBillingCurrency",
+									"type": "Decimal"
+								}
+							},
+							{
+								"source": {
+									"name": "CostCenter",
+									"type": "String"
+								},
+								"sink": {
+									"name": "CostCenter",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ConsumedService",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ConsumedService",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ResourceId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ResourceId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Tags",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Tags",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "OfferId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "OfferId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "AdditionalInfo",
+									"type": "String"
+								},
+								"sink": {
+									"name": "AdditionalInfo",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ServiceInfo1",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ServiceInfo1",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ServiceInfo2",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ServiceInfo2",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ResourceName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ResourceName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ReservationId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ReservationId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ReservationName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ReservationName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "UnitPrice",
+									"type": "String"
+								},
+								"sink": {
+									"name": "UnitPrice",
+									"type": "Decimal"
+								}
+							},
+							{
+								"source": {
+									"name": "ProductOrderId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ProductOrderId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ProductOrderName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ProductOrderName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Term",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Term",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "PublisherType",
+									"type": "String"
+								},
+								"sink": {
+									"name": "PublisherType",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "PublisherName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "PublisherName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ChargeType",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ChargeType",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Frequency",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Frequency",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "PricingModel",
+									"type": "String"
+								},
+								"sink": {
+									"name": "PricingModel",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "AvailabilityZone",
+									"type": "String"
+								},
+								"sink": {
+									"name": "AvailabilityZone",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "BillingAccountId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "BillingAccountId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "BillingAccountName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "BillingAccountName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "BillingCurrencyCode",
+									"type": "String"
+								},
+								"sink": {
+									"name": "BillingCurrencyCode",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "BillingPeriodStartDate",
+									"type": "String"
+								},
+								"sink": {
+									"name": "BillingPeriodStartDate",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "BillingPeriodEndDate",
+									"type": "String"
+								},
+								"sink": {
+									"name": "BillingPeriodEndDate",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "BillingProfileId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "BillingProfileId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "BillingProfileName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "BillingProfileName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "InvoiceSectionId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "InvoiceSectionId",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "IsAzureCreditEligible",
+									"type": "String"
+								},
+								"sink": {
+									"name": "IsAzureCreditEligible",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "PartNumber",
+									"type": "String"
+								},
+								"sink": {
+									"name": "PartNumber",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "PayGPrice",
+									"type": "String"
+								},
+								"sink": {
+									"name": "PayGPrice",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "PlanName",
+									"type": "String"
+								},
+								"sink": {
+									"name": "PlanName",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ServiceFamily",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ServiceFamily",
+									"type": "String"
+								}
+							}
+						]
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "CSVFileDataset",
+						"type": "DatasetReference",
+						"parameters": {
+							"StorageAccount": {
+								"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+								"type": "Expression"
+							},
+							"Container": {
+								"value": "@pipeline().globalParameters.costopt_Container",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.AmortizedCostExportName}",
+								"type": "Expression"
+							},
+							"File": {
+								"value": "NOTUSED",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "costoptSQLTableDataset",
+						"type": "DatasetReference",
+						"parameters": {
+							"tablename": {
+								"value": "AmortizedCost",
+								"type": "Expression"
+							},
+							"schemaname": {
+								"value": "@pipeline().parameters.TargetSchemaName",
+								"type": "Expression"
+							},
+							"sqlservername": {
+								"value": "@pipeline().globalParameters.costopt_sqlservername",
+								"type": "Expression"
+							},
+							"sqldbname": {
+								"value": "@pipeline().globalParameters.costopt_sqldbname",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "DeleteAmortizedCostExportFiles",
+				"type": "Delete",
+				"dependsOn": [
+					{
+						"activity": "LoadAmortizedCostToSQL",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "AubiBinaryFile",
+						"type": "DatasetReference",
+						"parameters": {
+							"StorageAccountName": {
+								"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+								"type": "Expression"
+							},
+							"Container": {
+								"value": "@pipeline().globalParameters.costopt_Container",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.AmortizedCostExportName}",
+								"type": "Expression"
+							},
+							"FIleName": "NOTUSED"
+						}
+					},
+					"enableLogging": false,
+					"storeSettings": {
+						"type": "AzureBlobStorageReadSettings",
+						"recursive": true,
+						"wildcardFileName": "*",
+						"enablePartitionDiscovery": false
+					}
+				}
+			},
+			{
+				"name": "ManagePartitions",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "costmanagement.addMonthPartitions"
+				},
+				"linkedServiceName": {
+					"referenceName": "AubiSQLDatabase",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"databasename": {
+							"value": "@pipeline().globalParameters.costopt_sqldbname",
+							"type": "Expression"
+						},
+						"servername": {
+							"value": "@pipeline().globalParameters.costopt_sqlservername",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "ReOrgActualCostIndex",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "LoadActualCostToSQL",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[costmanagement].[ReorganiseActualCostIndex]"
+				},
+				"linkedServiceName": {
+					"referenceName": "AubiSQLDatabase",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"databasename": {
+							"value": "@pipeline().globalParameters.costopt_sqldbname",
+							"type": "Expression"
+						},
+						"servername": {
+							"value": "@pipeline().globalParameters.costopt_sqlservername",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "ReOrgAmortizedCostIndex",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "LoadAmortizedCostToSQL",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[costmanagement].[ReorganiseAmortizedCostIndex]"
+				},
+				"linkedServiceName": {
+					"referenceName": "AubiSQLDatabase",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"databasename": {
+							"value": "@pipeline().globalParameters.costopt_sqldbname",
+							"type": "Expression"
+						},
+						"servername": {
+							"value": "@pipeline().globalParameters.costopt_sqlservername",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"UsageDownload_StorageBlobDirectory": {
+				"type": "string",
+				"defaultValue": "download/usage/scheduled_exports"
+			},
+			"TargetSchemaName": {
+				"type": "string",
+				"defaultValue": "costmanagement"
+			},
+			"ActualCostExportName": {
+				"type": "string",
+				"defaultValue": "msftCostManagementExportActualCost"
+			},
+			"AmortizedCostExportName": {
+				"type": "string",
+				"defaultValue": "msftCostManagementExportAmortizedCost"
+			}
+		},
+		"variables": {
+			"ActualCostDeleteStartDate": {
+				"type": "String",
+				"defaultValue": "1901-01-01"
+			},
+			"ActualCostDeleteEndDate": {
+				"type": "String",
+				"defaultValue": "1901-01-01"
+			},
+			"AmortizedCostDeleteStartDate": {
+				"type": "String",
+				"defaultValue": "1901-01-01"
+			},
+			"AmortizedCostDeleteEndDate": {
+				"type": "String",
+				"defaultValue": "1901-01-01"
+			}
+		},
+		"folder": {
+			"name": "UsageData"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-10-09T21:50:18Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

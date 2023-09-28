@@ -1,0 +1,513 @@
+{
+	"name": "GetAdvisorData",
+	"properties": {
+		"activities": [
+			{
+				"name": "GenerateRecommendationsForEachSubscription",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "WebActivityGetSubscriptions",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('WebActivityGetSubscriptions').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "WebActivityGenerateRecommendations",
+							"type": "WebActivity",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"url": {
+									"value": "https://management.azure.com/subscriptions/@{item().subscriptionId}/providers/Microsoft.Advisor/generateRecommendations?api-version=@{pipeline().parameters.AdvisorAPIVersionGenerateRecs}",
+									"type": "Expression"
+								},
+								"method": "POST",
+								"body": "x",
+								"authentication": {
+									"type": "ServicePrincipal",
+									"userTenant": {
+										"value": "@activity('GetTenantId').output.value",
+										"type": "Expression"
+									},
+									"username": {
+										"value": "@activity('GetClientId').output.value",
+										"type": "Expression"
+									},
+									"resource": "https://management.azure.com",
+									"password": {
+										"type": "AzureKeyVaultSecret",
+										"store": {
+											"referenceName": "aubiKeyVault",
+											"type": "LinkedServiceReference",
+											"parameters": {
+												"KeyVaultName": {
+													"value": "@pipeline().globalParameters.costopt_KeyVaultName",
+													"type": "Expression"
+												}
+											}
+										},
+										"secretName": {
+											"value": "@pipeline().globalParameters.costopt_clientsecret_secretname",
+											"type": "Expression"
+										}
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "DownloadRecommendationsForEachSub",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "WaitForGeneration",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('WebActivityGetSubscriptions').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "GetRecommendationsForSub",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "GetRecommendationsForSub",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"WaitTimeSecs": {
+										"value": "@pipeline().parameters.AdvisorLoopWaitTimeSecs",
+										"type": "Expression"
+									},
+									"SubscriptionId": {
+										"value": "@item().subscriptionId",
+										"type": "Expression"
+									},
+									"Download_StorageBlobContainer": {
+										"value": "@pipeline().globalParameters.costopt_Container",
+										"type": "Expression"
+									},
+									"Download_StorageBlobDirectory": {
+										"value": "@pipeline().parameters.Download_StorageBlobDirectory",
+										"type": "Expression"
+									},
+									"DownloadTargetFilename": {
+										"value": "@pipeline().parameters.DownloadTargetFilename",
+										"type": "Expression"
+									},
+									"RecommendationsAPIVersion": {
+										"value": "@pipeline().parameters.AdvisorAPIVersionGetRecs",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "WebActivityGetSubscriptions",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "GetClientId",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "GetTenantId",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": "https://management.azure.com/subscriptions?api-version=2020-01-01",
+					"method": "GET",
+					"authentication": {
+						"type": "ServicePrincipal",
+						"userTenant": {
+							"value": "@activity('GetTenantId').output.value",
+							"type": "Expression"
+						},
+						"username": {
+							"value": "@activity('GetClientId').output.value",
+							"type": "Expression"
+						},
+						"resource": "https://management.azure.com",
+						"password": {
+							"type": "AzureKeyVaultSecret",
+							"store": {
+								"referenceName": "aubiKeyVault",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"KeyVaultName": {
+										"value": "@pipeline().globalParameters.costopt_KeyVaultName",
+										"type": "Expression"
+									}
+								}
+							},
+							"secretName": {
+								"value": "@pipeline().globalParameters.costopt_clientsecret_secretname",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "WaitForGeneration",
+				"type": "Wait",
+				"dependsOn": [
+					{
+						"activity": "GenerateRecommendationsForEachSubscription",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"waitTimeInSeconds": {
+						"value": "@pipeline().parameters.GenerationWaitTimeSecs",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "MergeFiles",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "DownloadRecommendationsForEachSub",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "DeleteTargetFileIfItExists",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true,
+							"wildcardFolderPath": {
+								"value": "@pipeline().parameters.Download_StorageBlobDirectory",
+								"type": "Expression"
+							},
+							"wildcardFileName": "*.json",
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"sink": {
+						"type": "JsonSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings",
+							"copyBehavior": "MergeFiles"
+						},
+						"formatSettings": {
+							"type": "JsonWriteSettings",
+							"filePattern": "arrayOfObjects"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "JsonDataset",
+						"type": "DatasetReference",
+						"parameters": {
+							"StorageAccountName": {
+								"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+								"type": "Expression"
+							},
+							"Container": {
+								"value": "@pipeline().globalParameters.costopt_Container",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@pipeline().parameters.Download_StorageBlobDirectory",
+								"type": "Expression"
+							},
+							"FileName": {
+								"value": "NotNeeded",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "JsonDataset",
+						"type": "DatasetReference",
+						"parameters": {
+							"StorageAccountName": {
+								"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+								"type": "Expression"
+							},
+							"Container": {
+								"value": "@pipeline().globalParameters.costopt_Container",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@concat(pipeline().parameters.Download_StorageBlobDirectory,'/merged')",
+								"type": "Expression"
+							},
+							"FileName": {
+								"value": "@pipeline().parameters.DownloadTargetFilename",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "GetClientId",
+				"description": "Retrieve ClientId from Keyvault",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:05:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": true,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_clientId_secretname}?api-version=7.0",
+						"type": "Expression"
+					},
+					"method": "GET",
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://vault.azure.net"
+					}
+				}
+			},
+			{
+				"name": "GetTenantId",
+				"description": "Retrieve TenantId from Keyvault",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:05:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": true,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_tenantid_secretname}?api-version=7.0",
+						"type": "Expression"
+					},
+					"method": "GET",
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://vault.azure.net"
+					}
+				}
+			},
+			{
+				"name": "CheckTargetFile",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "JsonDataset",
+						"type": "DatasetReference",
+						"parameters": {
+							"StorageAccountName": {
+								"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+								"type": "Expression"
+							},
+							"Container": {
+								"value": "@pipeline().globalParameters.costopt_Container",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@concat(pipeline().parameters.Download_StorageBlobDirectory,'/merged')",
+								"type": "Expression"
+							},
+							"FileName": {
+								"value": "@pipeline().parameters.DownloadTargetFilename",
+								"type": "Expression"
+							}
+						}
+					},
+					"fieldList": [
+						"exists"
+					],
+					"storeSettings": {
+						"type": "AzureBlobStorageReadSettings",
+						"recursive": true
+					},
+					"formatSettings": {
+						"type": "JsonReadSettings"
+					}
+				}
+			},
+			{
+				"name": "DeleteTargetFileIfItExists",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "CheckTargetFile",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@bool(activity('CheckTargetFile').output.exists)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "DeleteTargetFile",
+							"type": "Delete",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataset": {
+									"referenceName": "JsonDataset",
+									"type": "DatasetReference",
+									"parameters": {
+										"StorageAccountName": {
+											"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+											"type": "Expression"
+										},
+										"Container": {
+											"value": "@pipeline().globalParameters.costopt_Container",
+											"type": "Expression"
+										},
+										"Directory": {
+											"value": "@concat(pipeline().parameters.Download_StorageBlobDirectory,'/merged')",
+											"type": "Expression"
+										},
+										"FileName": {
+											"value": "@pipeline().parameters.DownloadTargetFilename",
+											"type": "Expression"
+										}
+									}
+								},
+								"enableLogging": false,
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"GenerationWaitTimeSecs": {
+				"type": "int",
+				"defaultValue": 120
+			},
+			"Download_StorageBlobDirectory": {
+				"type": "string",
+				"defaultValue": "download/advisor"
+			},
+			"DownloadTargetFilename": {
+				"type": "string",
+				"defaultValue": "advisor.json"
+			},
+			"AdvisorLoopWaitTimeSecs": {
+				"type": "int",
+				"defaultValue": 120
+			},
+			"AdvisorAPIVersionGenerateRecs": {
+				"type": "string",
+				"defaultValue": "2017-04-19"
+			},
+			"AdvisorAPIVersionGetRecs": {
+				"type": "string",
+				"defaultValue": "2020-01-01"
+			}
+		},
+		"folder": {
+			"name": "Advisor"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-09-21T21:31:26Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

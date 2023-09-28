@@ -1,0 +1,70 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "dataFactory_factoryName": {
+            "value": "aubidatafactory0001"
+        },
+        "factoryName": {
+            "value": "aubidatafactory0001"
+        },
+        "dataFactory_properties_globalParameters_aubi_sqlservername_value": {
+            "value": "aubisqlserver002"
+        },
+        "dataFactory_properties_globalParameters_aubi_sqldbname_value": {
+            "value": "aubisqldb"
+        },
+        "dataFactory_properties_globalParameters_KeyVaultName_value": {
+            "value": "aubikeyvault002"
+        },
+        "dataFactory_properties_globalParameters_aubi_StorageAccountName_value": {
+            "value": "aubistorage0001"
+        },
+        "dataFactory_location": {
+            "value": "westeurope"
+        },
+        "ConsumptionAPIDownloadBlobStorage_sasUri": {
+            "value": "@concat(linkedService().URL,'?',linkedService().Token)",
+        },
+        "AubiSQLDatabase_connectionString": {
+            "value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=@{linkedService().servername}.database.windows.net;Initial Catalog=@{linkedService().databasename}"
+        },
+        "dataFactory_properties_globalParameters_LookbackPeriodsArray_value": {
+            "value": [
+                "7",
+                "30",
+                "60"
+            ]
+        },
+        "dataFactory_properties_globalParameters_ServicesArray_value": {
+            "value": [
+                "azuredataexplorer",
+                "appservice",
+                "cosmosdb",
+                "mariadb",
+                "mysql",
+                "postgresql",
+                "rediscache",
+                "redhat",
+                "sqldatabases",
+                "sqldatawarehouse",
+                "suselinux",
+                "virtualmachines",
+                "blockblob",
+                "vmwarecloudsimple"
+            ]
+        },
+        "dataFactory_properties_globalParameters_aubi_tenantid_secretname_value": {
+            "value": "aubi-tenantid"
+        },
+        "dataFactory_properties_globalParameters_aubi_clientsecret_secretname_value": {
+            "value": "aubi-serviceprincipalsecret"
+        },
+        "dataFactory_properties_globalParameters_aubi_clientId_secretname_value": {
+            "value": "aubi-serviceprincipalclientid"
+        },
+        "dataFactory_identity_type": {
+            "value": "SystemAssigned"
+        }
+    }
+}

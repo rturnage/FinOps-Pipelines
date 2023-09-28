@@ -1,0 +1,25 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "value": "aubidatafactory0003"
+        },
+		"KeyVaultName": {
+			"type": "string",
+			"value": "aubikeyvault0003"
+		},
+		"StorageAccountName": {
+			"type": "string",
+			"value": "aubistorage0003"
+		},
+		"SqlServerName": {
+			"type": "string",
+			"value": "aubisqlserver0003"
+		},
+		"SqlDbName": {
+			"type": "string",
+			"value": "aubisqldb0003"
+		}
+    }
+}

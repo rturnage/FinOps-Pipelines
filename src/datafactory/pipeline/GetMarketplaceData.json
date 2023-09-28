@@ -1,0 +1,245 @@
+{
+	"name": "GetMarketplaceData",
+	"properties": {
+		"description": "\n\nsubscriptions/b466d563-74e6-4232-a5c6-f39f65f6f1fc - No data returned\n",
+		"activities": [
+			{
+				"name": "GetClientId",
+				"description": "Retrieve ClientId from Keyvault",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:05:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": true,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_clientId_secretname}?api-version=7.0",
+						"type": "Expression"
+					},
+					"method": "GET",
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://vault.azure.net"
+					}
+				}
+			},
+			{
+				"name": "GetTenantId",
+				"description": "Retrieve TenantId from Keyvault",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:05:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": true,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_tenantid_secretname}?api-version=7.0",
+						"type": "Expression"
+					},
+					"method": "GET",
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://vault.azure.net"
+					}
+				}
+			},
+			{
+				"name": "CopyConsumptionAPIMarketPlaceData",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "GetClientId",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "GetTenantId",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "RestSource",
+						"httpRequestTimeout": "00:10:00",
+						"requestInterval": "00.00:00:00.010",
+						"requestMethod": "GET",
+						"paginationRules": {
+							"AbsoluteUrl": "$.nextLink"
+						}
+					},
+					"sink": {
+						"type": "JsonSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings"
+						},
+						"formatSettings": {
+							"type": "JsonWriteSettings",
+							"filePattern": "arrayOfObjects"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"path": "['id']"
+								},
+								"sink": {
+									"path": "$['id']"
+								}
+							},
+							{
+								"source": {
+									"path": "['name']"
+								},
+								"sink": {
+									"path": "$['name']"
+								}
+							},
+							{
+								"source": {
+									"path": "['type']"
+								},
+								"sink": {
+									"path": "$['type']"
+								}
+							},
+							{
+								"source": {
+									"path": "['tags']"
+								},
+								"sink": {
+									"path": "$['tags']"
+								}
+							},
+							{
+								"source": {
+									"path": "['properties']"
+								},
+								"sink": {
+									"path": "$['properties']"
+								}
+							}
+						],
+						"collectionReference": "$['value']"
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "ManagementAPIDataSet",
+						"type": "DatasetReference",
+						"parameters": {
+							"servicePrincipalId": {
+								"value": "@activity('GetClientId').output.value",
+								"type": "Expression"
+							},
+							"servicePrincipalSecretKeyName": {
+								"value": "@pipeline().globalParameters.costopt_clientsecret_secretname",
+								"type": "Expression"
+							},
+							"tenantId": {
+								"value": "@activity('GetTenantId').output.value",
+								"type": "Expression"
+							},
+							"scope": {
+								"value": "@pipeline().parameters.scope",
+								"type": "Expression"
+							},
+							"api": "providers/Microsoft.Consumption/marketplaces",
+							"apiversion": {
+								"value": "@pipeline().parameters.ConsumptionAPIVersion",
+								"type": "Expression"
+							},
+							"filter": {
+								"value": "&$filter=properties/usageStart ge '@{pipeline().parameters.UsageStartDate}' and properties/usageEnd le '@{pipeline().parameters.UsageEndDate}'",
+								"type": "Expression"
+							},
+							"KeyVaultName": {
+								"value": "@pipeline().globalParameters.costopt_KeyVaultName",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "JsonDataset",
+						"type": "DatasetReference",
+						"parameters": {
+							"StorageAccountName": {
+								"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+								"type": "Expression"
+							},
+							"Container": {
+								"value": "@pipeline().globalParameters.costopt_Container",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@pipeline().parameters.Download_StorageBlobDirectory",
+								"type": "Expression"
+							},
+							"FileName": {
+								"value": "@pipeline().parameters.DownloadTargetFilename",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"Download_StorageBlobDirectory": {
+				"type": "string",
+				"defaultValue": "download/marketplace"
+			},
+			"DownloadTargetFilename": {
+				"type": "string",
+				"defaultValue": "marketplace.json"
+			},
+			"scope": {
+				"type": "string",
+				"defaultValue": "providers/Microsoft.Billing/billingAccounts/<BillingAccountNum>"
+			},
+			"UsageStartDate": {
+				"type": "string",
+				"defaultValue": "2021-01-01"
+			},
+			"UsageEndDate": {
+				"type": "string",
+				"defaultValue": "2021-09-21"
+			},
+			"ConsumptionAPIVersion": {
+				"type": "string",
+				"defaultValue": "2019-10-01"
+			}
+		},
+		"folder": {
+			"name": "Marketplaces"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-09-22T19:26:46Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

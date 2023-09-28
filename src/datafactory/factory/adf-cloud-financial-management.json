@@ -1,0 +1,87 @@
+{
+	"name": "adf-cloud-financial-management",
+	"properties": {
+		"globalParameters": {
+			"ResRecLookbackPeriodsArray": {
+				"type": "array",
+				"value": [
+					"Last7Days",
+					"Last30Days",
+					"Last60Days"
+				]
+			},
+			"ResRecServicesArray": {
+				"type": "array",
+				"value": [
+					"VirtualMachines",
+					"SQLDatabases",
+					"PostgreSQL",
+					"ManagedDisk",
+					"MySQL",
+					"RedHat",
+					"MariaDB",
+					"RedisCache",
+					"CosmosDB",
+					"SqlDataWarehouse",
+					"SUSELinux",
+					"AppService",
+					"BlockBlob",
+					"AzureDataExplorer",
+					"VMwareCloudSimple"
+				]
+			},
+			"costopt_sqlservername": {
+				"type": "string",
+				"value": "costoptsqlserver"
+			},
+			"costopt_sqldbname": {
+				"type": "string",
+				"value": "costoptsqldb"
+			},
+			"costopt_KeyVaultName": {
+				"type": "string",
+				"value": "costoptkeyvault0006"
+			},
+			"costopt_tenantid_secretname": {
+				"type": "string",
+				"value": "costopt-tenantid"
+			},
+			"costopt_clientsecret_secretname": {
+				"type": "string",
+				"value": "costopt-serviceprincipalsecret"
+			},
+			"costopt_clientId_secretname": {
+				"type": "string",
+				"value": "costopt-serviceprincipalclientid"
+			},
+			"costopt_StorageAccountName": {
+				"type": "string",
+				"value": "costoptstorage"
+			},
+			"costopt_ResourceGroupName": {
+				"type": "string",
+				"value": "rg-costopt"
+			},
+			"costopt_EnrollmentNumber": {
+				"type": "string",
+				"value": "123456"
+			},
+			"costopt_StorageAccountSubscriptionId": {
+				"type": "string",
+				"value": "SubId"
+			},
+			"costopt_PriceSheetSubscriptionId": {
+				"type": "string",
+				"value": "SubId"
+			},
+			"costopt_Container": {
+				"type": "string",
+				"value": "costopt"
+			}
+		}
+	},
+	"location": "westeurope",
+	"identity": {
+		"type": "SystemAssigned"
+	}
+}

@@ -1,0 +1,267 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    	"contentVersion": "1.0.0.0",
+  	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "cost-opt-data-factory"
+			},
+		"StorageAccountName": {
+			"type": "string",
+			"defaultValue": "costoptstorage",
+			"metadata": {
+				"description": "Name of Storage Account to Create"
+			}
+		},
+		"CostOptContainerName": {
+			"type": "string",
+			"defaultValue": "costopt",
+			"metadata": {
+				"description": "Name of Blob container for storing data"
+			}
+		},
+		"KeyVaultName": {
+			"type": "string",
+			"defaultValue": "costoptkeyvault"
+		},
+		"SqlServerName": {
+			"type": "string",
+			"defaultValue": "costoptsqlserver"
+		},
+		"SqlDbName": {
+			"type": "string",
+			"defaultValue": "costoptsqldb"
+		},
+		"sql_database_size": {
+			"defaultValue": 107374182400,
+			"type": "int"
+		},
+		"sql_database_minvcores": {
+			"defaultValue": "0.5",
+			"type": "string"
+		},
+		"sql_database_maxvcores": {
+			"defaultValue": 4,
+			"type": "int"
+		},
+		"sql_database_admin": {
+			"defaultValue": "sqladmin",
+			"type": "string"
+		},
+		"sql_database_admin_password": {
+			"type": "securestring"
+		},
+		"CostOptServicePrincipalClientId": {
+			"type": "string"
+		},
+		"CostOptServicePrincipalSecret": {
+			"type": "securestring"
+		},
+		"CostOptTenantId": {
+			"type": "string"
+		},
+		"firewallrulename": {
+			"type": "string"
+		},
+		"firewallstartip": {
+			"type": "string"
+		},
+		"firewallendip": {
+			"type": "string"
+		}
+  	},
+    	"variables": {
+        	"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]",
+		"StorageBlobDataContrib Role Definition ID": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]"
+    	},
+  	"resources": [
+		{
+            		"type": "Microsoft.Storage/storageAccounts",
+            		"apiVersion": "2019-06-01",
+            		"name": "[parameters('StorageAccountName')]",
+            		"location": "[resourceGroup().location]",
+            		"tags": {
+               			"displayName": "[parameters('StorageAccountName')]"
+            		},
+            		"sku": {
+               			"name": "Standard_LRS"
+           		},
+            		"kind": "StorageV2",
+            		"properties": {
+                		"largeFileSharesState": "Disabled",
+                		"networkAcls": {
+                    			"bypass": "AzureServices",
+                    			"virtualNetworkRules": [],
+                    			"ipRules": [],
+                    			"defaultAction": "Allow"
+                		},
+                		"supportsHttpsTrafficOnly": true
+            		},
+            		"resources": [
+				{
+                    		"name": "[concat('default/', parameters('CostOptContainerName'))]",
+                    		"type": "blobServices/containers",
+                    		"apiVersion": "2019-06-01",
+                    		"dependsOn": ["[parameters('StorageAccountName')]"]
+                		}
+			]
+        	},
+		{
+			"type": "Microsoft.Storage/storageAccounts/providers/roleAssignments",
+			"apiVersion": "2020-10-01-preview",
+			"name": "[concat(parameters('StorageAccountName'), '/Microsoft.Authorization/', guid(concat(resourceGroup().id), variables('StorageBlobDataContrib Role Definition ID'),parameters('storageAccountName')))]",
+			"dependsOn": [
+				"[concat('Microsoft.Storage/storageAccounts/', parameters('StorageAccountName'))]"
+			],
+			"properties": {
+				"roleDefinitionId": "[variables('StorageBlobDataContrib Role Definition ID')]",
+				"principalId": "[reference(resourceId('Microsoft.DataFactory/factories/', parameters('factoryName')), '2018-06-01', 'Full').identity.principalId]",
+				"principalType": "ServicePrincipal"
+			}
+		},
+
+		{
+			"type": "Microsoft.KeyVault/vaults",
+			"apiVersion": "2018-02-14",
+			"name": "[parameters('KeyVaultName')]",
+			"location": "[resourceGroup().location]",
+			"tags": {
+				"displayName": "[parameters('KeyVaultName')]"
+			},
+			"properties": {
+				"enabledForDeployment": false,
+				"enabledForTemplateDeployment": true,
+				"enabledForDiskEncryption": false,
+				"tenantId": "[subscription().tenantId]",
+				"accessPolicies": [
+					{
+						"tenantId": "[subscription().tenantId]",
+						"objectId": "[reference(resourceId('Microsoft.DataFactory/factories/', parameters('factoryName')), '2018-06-01', 'Full').identity.principalId]",
+						"permissions": {
+							"secrets": [
+								"Get",
+								"List"
+							]
+						}
+					}
+				],
+				"sku": {
+					"name": "standard",
+					"family": "A"
+				}
+			}
+		},
+		{
+			"apiVersion": "2018-02-14",
+			"type": "Microsoft.KeyVault/vaults/secrets",
+			"dependsOn": [
+				"[concat('Microsoft.KeyVault/vaults/', parameters('KeyVaultName'))]"
+			],
+			"name": "[concat(parameters('KeyVaultName'), '/', 'costopt-tenantid')]",
+			"properties": {
+				"value": "[parameters('CostOptTenantId')]"
+			}
+		},
+		{
+			"apiVersion": "2018-02-14",
+			"type": "Microsoft.KeyVault/vaults/secrets",
+			"dependsOn": [
+				"[concat('Microsoft.KeyVault/vaults/', parameters('KeyVaultName'))]"
+			],
+			"name": "[concat(parameters('KeyVaultName'), '/', 'costopt-serviceprincipalsecret')]",
+			"properties": {
+				"value": "[parameters('CostOptServicePrincipalSecret')]"
+			}
+		},
+		{
+			"apiVersion": "2018-02-14",
+			"type": "Microsoft.KeyVault/vaults/secrets",
+			"dependsOn": [
+				"[concat('Microsoft.KeyVault/vaults/', parameters('KeyVaultName'))]"
+			],
+			"name": "[concat(parameters('KeyVaultName'), '/', 'costopt-serviceprincipalclientid')]",
+			"properties": {
+				"value": "[parameters('CostOptServicePrincipalClientId')]"
+			}
+		},
+		{
+			"type": "Microsoft.Sql/servers",
+			"apiVersion": "2019-06-01-preview",
+			"name": "[parameters('SqlServerName')]",
+			"location": "[resourceGroup().location]",
+			"kind": "v12.0",
+			"properties": {
+				"administratorLogin": "[parameters('sql_database_admin')]",
+				"version": "12.0",
+				"publicNetworkAccess": "Enabled",
+				"administratorLoginPassword": "[parameters('sql_database_admin_password')]"
+			}
+		},
+		{
+			"type": "Microsoft.Sql/servers/firewallRules",
+			"apiVersion": "2015-05-01-preview",
+			"name": "[concat(parameters('SqlServerName'), '/AllowAllWindowsAzureIps')]",
+			"dependsOn": [
+				"[resourceId('Microsoft.Sql/servers', parameters('SqlServerName'))]"
+			],
+			"properties": {
+				"startIpAddress": "0.0.0.0",
+				"endIpAddress": "0.0.0.0"
+			}
+		},
+
+
+		{
+  			"type": "Microsoft.Sql/servers/firewallRules",
+  			"apiVersion": "2021-08-01-preview",
+  			"name": "[concat(parameters('SqlServerName'), '/' ,parameters('firewallrulename'))]",
+			"dependsOn": [
+				"[resourceId('Microsoft.Sql/servers', parameters('SqlServerName'))]"
+			],
+ 			"properties": {
+    				"endIpAddress": "[parameters('firewallendip')]",
+    				"startIpAddress": "[parameters('firewallstartip')]"
+  			}
+		},
+		{
+			"type": "Microsoft.Sql/servers/databases",
+			"apiVersion": "2019-06-01-preview",
+			"name": "[concat(parameters('SqlServerName'), '/',parameters('SqlDbName'))]",
+			"location": "[resourceGroup().location]",
+			"sku": {
+				"name": "GP_S_Gen5",
+				"tier": "GeneralPurpose",
+				"family": "Gen5",
+				"capacity": "[parameters('sql_database_maxvcores')]"
+			},
+			"kind": "v12.0,user,vcore,serverless",
+			"dependsOn": [
+				"[resourceId('Microsoft.Sql/servers', parameters('SqlServerName'))]"
+			],
+			"properties": {
+				"collation": "SQL_Latin1_General_CP1_CI_AS",
+				"maxSizeBytes": "[parameters('sql_database_size')]",
+				"catalogCollation": "SQL_Latin1_General_CP1_CI_AS",
+				"zoneRedundant": false,
+				"readScale": "Disabled",
+				"readReplicaCount": 0,
+				"autoPauseDelay": 60,
+				"storageAccountType": "GRS",
+				"minCapacity": "[parameters('sql_database_minvcores')]"
+			}
+		},
+		{
+			"type": "Microsoft.Sql/servers/databases/transparentDataEncryption",
+			"apiVersion": "2014-04-01",
+			"name": "[concat(parameters('SqlServerName'), '/',parameters('SqlDbName'),'/current')]",
+			"location": "[resourceGroup().location]",
+			"dependsOn": [
+				"[resourceId('Microsoft.Sql/servers/databases', parameters('SqlServerName'), parameters('SqlDbName'))]"
+			],
+			"properties": {
+				"status": "Enabled"
+			}
+		}
+  ]
+}

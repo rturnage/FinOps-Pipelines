@@ -1,0 +1,21 @@
+{
+    "url": {
+    "type": "Expression",
+    "value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_clientId_secretname}?api-version=7.0"
+    },
+
+    "apiVersion": "2018-06-01",
+    "dependsOn": [],
+    "name": "[concat(parameters('factoryName'), '/aubiAzureStorage')]",
+    "properties": {
+        "annotations": [],
+        "description": "Data retrieved from the Billing APIs will be written to this Azure Storage account",
+        "parameters": {
+            "StorageAccountName": {
+                "defaultValue": "cfmdefaultsa",
+                "type": "String"
+            }
+        }
+    }
+
+}

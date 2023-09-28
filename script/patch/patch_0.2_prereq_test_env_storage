@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+######################################################
+# Pipeline patch for Issue #35 duplicate data.
+# Copy storage account for dev and qa
+#
+# Globals
+#   RESOURCE_GROUP  src and dst resource group
+#   STORAGE_ACCOUNT_NAME src name and pattern.
+######################################################
+
+echo "Deploying ${BASH_SOURCE[0]}"
+
+# shellcheck disable=SC2164
+PROJ_ROOT_PATH=$(cd "$(dirname "$0")"/../..; pwd)
+echo "root folder: $PROJ_ROOT_PATH"
+
+echo "loading env variables"
+ENV_VARS="$(awk '!/^\s*#/' "${PROJ_ROOT_PATH}/.env" | awk '!/^\s*$/')"
+eval "$(
+  printf '%s\n' "$ENV_VARS" | while IFS='' read -r line; do
+    key=$(printf '%s\n' "$line"| sed 's/"/\\"/g' | cut -d '=' -f 1)
+    value=$(printf '%s\n' "$line" | cut -d '=' -f 2- | sed 's/"/\\\"/g' | tr -d '\f\r')
+    printf '%s\n' "export $key=\"$value\""
+  done
+)"
+
+# For example: Basic, S0, P1, GP_Gen4_1, GP_Gen5_S_8, BC_Gen5_2,
+echo Get current storage account info..
+az storage account show --resource-group "$RESOURCE_GROUP" --name "$STORAGE_ACCOUNT_NAME"
+storage_account_info=$(az storage account show --resource-group "$RESOURCE_GROUP" --name "$STORAGE_ACCOUNT_NAME")
+echo "$storage_account_info"
+sku_name=$(jq ".sku.name" <<< "$storage_account_info"  | tr -d '"')
+echo "$sku_name"
+storage_location=$(jq ".primaryLocation" <<< "$storage_account_info"  | tr -d '"')
+echo "$storage_location"
+
+echo Create Copy for Dev
+echo Command: az storage account create --resource-group "$RESOURCE_GROUP" --name "${STORAGE_ACCOUNT_NAME}dev" --sku "$sku_name" --location "$storage_location"
+az storage account create --resource-group "$RESOURCE_GROUP" --name "${STORAGE_ACCOUNT_NAME}dev" --sku "$sku_name" --location "$storage_location"
+
+retVal=$?
+if [[ $retVal -ne 0 ]]; then
+  echo
+  echo "Failed creating dev storage account"
+else
+  echo
+  echo "Done creating dev storage account"
+fi
+
+echo Create Copy for Qa
+echo Command: az storage account create --resource-group "$RESOURCE_GROUP" --name "${STORAGE_ACCOUNT_NAME}qa" --sku "$sku_name" --location "$storage_location"
+az storage account create --resource-group "$RESOURCE_GROUP" --name "${STORAGE_ACCOUNT_NAME}qa" --sku "$sku_name" --location "$storage_location"
+
+retVal=$?
+if [[ $retVal -ne 0 ]]; then
+  echo
+  echo "Failed creating qa storage account"
+else
+  echo
+  echo "Done creating qa storage account"
+fi

@@ -1,0 +1,472 @@
+{
+	"name": "RefreshAllData_FullLoad",
+	"properties": {
+		"description": "Use this pipeline when cost management exports have not been created.\n\nThis pipeline will create \"temporary\" exports, execute them, and then delete the exports once complete.\n\nExecutes all aubi data pipelines\nUsage Data is refreshed incrementally based on Two parameter values:\nIncrementalUpdateIntervalDays - defines how far back in time to load data from. i.e. This defines the start date for this run.\nDefaults to 7 days in the past.\n\nUsageExportDataRangeInterval - Exports will be generated with this many days of data until the end date (current date) is reached.\n\ne.g. With the defaults left as they are, each time this pipeline is run, ONE export file will be created for the previous week (7 days)\n\n\nAll other pipelines are run from:\nFullRefreshStartDate \nto \nExtract End Date (which is set to todays date)\n",
+		"activities": [
+			{
+				"name": "GetISFRatioDataPipeline",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "GetISFRatioDataPipeline",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"Download_StorageBlobDirectory": {
+							"value": "@concat(pipeline().parameters.costopt_StorageDirectoryName,'/isfratio')",
+							"type": "Expression"
+						},
+						"DownloadTargetFilename": "isfratio.csv",
+						"ISFFileURL": "https://isfratio.blob.core.windows.net/isfratio/ISFRatio.csv"
+					}
+				}
+			},
+			{
+				"name": "LoadIFSRatioToSQL",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "GetISFRatioDataPipeline",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "LoadISFRatioToSQL",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"Download_StorageBlobDirectory": {
+							"value": "@concat(pipeline().parameters.costopt_StorageDirectoryName,'/isfratio')",
+							"type": "Expression"
+						},
+						"DownloadTargetFilename": "isfratio.csv",
+						"TargetDBSchema": "costmanagement",
+						"TargetDBTable": "ISFData"
+					}
+				}
+			},
+			{
+				"name": "GetMarketplaceData",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Set Extract End Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "GetMarketplaceData",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"Download_StorageBlobDirectory": {
+							"value": "@concat(pipeline().parameters.costopt_StorageDirectoryName,'/marketplace')",
+							"type": "Expression"
+						},
+						"DownloadTargetFilename": "marketplace.json",
+						"scope": {
+							"value": "providers/Microsoft.Billing/billingAccounts/@{pipeline().globalParameters.costopt_EnrollmentNumber}",
+							"type": "Expression"
+						},
+						"UsageStartDate": {
+							"value": "@pipeline().parameters.FullRefreshStartDate",
+							"type": "Expression"
+						},
+						"UsageEndDate": {
+							"value": "@variables('ExtractEndDate')",
+							"type": "Expression"
+						},
+						"ConsumptionAPIVersion": {
+							"value": "@pipeline().parameters.ConsumptionAPIVersion",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "GetPriceSheet",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "GetPriceSheet",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"Download_StorageBlobContainer": {
+							"value": "@pipeline().globalParameters.costopt_Container",
+							"type": "Expression"
+						},
+						"Download_StorageBlobDirectory": {
+							"value": "@concat(pipeline().parameters.costopt_StorageDirectoryName,'/pricesheet')",
+							"type": "Expression"
+						},
+						"DownloadTargetFilename": "pricesheet.json",
+						"scope": {
+							"value": "subscriptions/@{pipeline().globalParameters.costopt_PriceSheetSubscriptionId}",
+							"type": "Expression"
+						},
+						"ConsumptionAPIVersion": {
+							"value": "@pipeline().parameters.ConsumptionAPIVersion",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "GetReservationRecommendationsOrchestrator",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Set Extract End Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "GetReservationRecommendationsOrchestrator",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"Download_StorageBlobDirectory": {
+							"value": "@concat(pipeline().parameters.costopt_StorageDirectoryName,'/resrecommendations')",
+							"type": "Expression"
+						},
+						"DownloadTargetFilename": "reservation_merged.json",
+						"Shared_RI_FilenamePrefix": "Shared_RI_Recommendation",
+						"Single_RI_FilenamePrefix": "Single_RI_Recommendation",
+						"scope": {
+							"value": "providers/Microsoft.Billing/billingAccounts/@{pipeline().globalParameters.costopt_EnrollmentNumber}",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Set Extract End Date",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "ExtractEndDate",
+					"value": {
+						"value": "@formatDateTime(utcnow(),'yyyy-MM-dd')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "GetReservationTransactions",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Set Extract End Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "GetReservationTransactions",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"Download_StorageBlobDirectory": {
+							"value": "@concat(pipeline().parameters.costopt_StorageDirectoryName,'/restransactions')",
+							"type": "Expression"
+						},
+						"DownloadTargetFilename": "restransactions.json",
+						"scope": {
+							"value": "providers/Microsoft.Billing/billingAccounts/@{pipeline().globalParameters.costopt_EnrollmentNumber}",
+							"type": "Expression"
+						},
+						"EventStartDate": {
+							"value": "@pipeline().parameters.FullRefreshStartDate",
+							"type": "Expression"
+						},
+						"EventEndDate": {
+							"value": "@variables('ExtractEndDate')",
+							"type": "Expression"
+						},
+						"ConsumptionAPIVersion": {
+							"value": "@pipeline().parameters.ConsumptionAPIVersion",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "GetAdvisorData",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "GetAdvisorData",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"GenerationWaitTimeSecs": {
+							"value": "@pipeline().parameters.AdvisorGenerationWaitSecs",
+							"type": "Expression"
+						},
+						"Download_StorageBlobDirectory": {
+							"value": "@concat(pipeline().parameters.costopt_StorageDirectoryName,'/advisor')",
+							"type": "Expression"
+						},
+						"DownloadTargetFilename": "advisor.json",
+						"AdvisorLoopWaitTimeSecs": 120
+					}
+				}
+			},
+			{
+				"name": "Set Incremental Refresh Start Date",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "IncrementalRefreshStartDate",
+					"value": {
+						"value": "@adddays(utcnow(),mul(-1,int(pipeline().parameters.IncrementalUpdateIntervalDays)),'yyyy-MM-dd')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "UsageExportOrchestrator",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Set Incremental Refresh Start Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Set Extract End Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "UsageExportOrchestrator",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"exportName_prefix": {
+							"value": "@pipeline().parameters.exportName_prefix",
+							"type": "Expression"
+						},
+						"scope": {
+							"value": "providers/Microsoft.Billing/billingAccounts/@{pipeline().globalParameters.costopt_EnrollmentNumber}",
+							"type": "Expression"
+						},
+						"CostManagementApiVersion": {
+							"value": "@pipeline().parameters.CostManagementExportsAPIVersion",
+							"type": "Expression"
+						},
+						"UsageDownload_StorageBlobDirectory": {
+							"value": "@concat(pipeline().parameters.costopt_StorageDirectoryName,'/usage')",
+							"type": "Expression"
+						},
+						"MaxExportExecutionRetries": 3,
+						"StartDate": {
+							"value": "@variables('IncrementalRefreshStartDate')",
+							"type": "Expression"
+						},
+						"EndDate": {
+							"value": "@variables('ExtractEndDate')",
+							"type": "Expression"
+						},
+						"ExportTimeframe": "Custom",
+						"ExportTypeArray": {
+							"value": "@pipeline().parameters.UsageExportTypeArray",
+							"type": "Expression"
+						},
+						"ExportStatusCheckLoopTime": 60,
+						"DateRangeInterval": {
+							"value": "@pipeline().parameters.UsageExportDateRangeInterval",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "GetReservationDetailsOrchestrator",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Set Extract End Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "GetReservationDetailsOrchestrator",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"costopt_StorageDirectoryName": {
+							"value": "@concat(pipeline().parameters.costopt_StorageDirectoryName,'/resdetails')",
+							"type": "Expression"
+						},
+						"ExtractStartDate": {
+							"value": "@pipeline().parameters.FullRefreshStartDate",
+							"type": "Expression"
+						},
+						"ExtractEndDate": {
+							"value": "@variables('ExtractEndDate')",
+							"type": "Expression"
+						},
+						"ResDetailsLoopIncrement": {
+							"value": "@int('60')",
+							"type": "Expression"
+						},
+						"BillingAccountScope": {
+							"value": "providers/Microsoft.Billing/billingAccounts/@{pipeline().globalParameters.costopt_EnrollmentNumber}",
+							"type": "Expression"
+						},
+						"CostManagementAPIVersion": {
+							"value": "@pipeline().parameters.CostMangementReservationDetailsAPIVersion",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "LoadResDetailsToDatabase",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "GetReservationDetailsOrchestrator",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "LoadResDetailsToDatabase",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"costopt_StorageDirectoryName": {
+							"value": "@concat(pipeline().parameters.costopt_StorageDirectoryName,'/resdetails')",
+							"type": "Expression"
+						},
+						"ResDetailsTargetTable": "ReservationDetails",
+						"ResDetailsTargetSchema": "costmanagement"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"FullRefreshStartDate": {
+				"type": "string",
+				"defaultValue": "2021-01-01"
+			},
+			"costopt_StorageDirectoryName": {
+				"type": "string",
+				"defaultValue": "download"
+			},
+			"AdvisorGenerationWaitSecs": {
+				"type": "int",
+				"defaultValue": 600
+			},
+			"CostManagementExportsAPIVersion": {
+				"type": "string",
+				"defaultValue": "2021-01-01"
+			},
+			"ConsumptionAPIVersion": {
+				"type": "string",
+				"defaultValue": "2019-10-01"
+			},
+			"IncrementalUpdateIntervalDays": {
+				"type": "int",
+				"defaultValue": 7
+			},
+			"AdvisorAPIVersionGenerateRecs": {
+				"type": "string",
+				"defaultValue": "2017-04-19"
+			},
+			"AdvisorAPIVersionGetRecs": {
+				"type": "string",
+				"defaultValue": "2020-01-01"
+			},
+			"exportName_prefix": {
+				"type": "string",
+				"defaultValue": "msftExportUsageTemp"
+			},
+			"UsageExportTypeArray": {
+				"type": "array",
+				"defaultValue": [
+					"ActualCost",
+					"AmortizedCost"
+				]
+			},
+			"UsageExportDateRangeInterval": {
+				"type": "int",
+				"defaultValue": 7
+			},
+			"CostMangementReservationDetailsAPIVersion": {
+				"type": "string",
+				"defaultValue": "2019-11-01"
+			}
+		},
+		"variables": {
+			"CurrentBillingPeriod": {
+				"type": "String",
+				"defaultValue": "202006"
+			},
+			"ExtractEndDate": {
+				"type": "String",
+				"defaultValue": "2020-06-16"
+			},
+			"ResDetailsLoopEndDate": {
+				"type": "String"
+			},
+			"ResDetailsLoopStartDate": {
+				"type": "String"
+			},
+			"IncrementalRefreshStartDate": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-09-21T22:04:42Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

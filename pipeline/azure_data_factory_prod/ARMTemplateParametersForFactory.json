@@ -1,0 +1,60 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "aubiAzureStorage_properties_typeProperties_serviceEndpoint": {
+            "value": "@{concat('https://',linkedService().StorageAccountName,'.blob.core.windows.net')}"
+        },
+        "aubiKeyVault_properties_typeProperties_baseUrl": {
+            "value": "https://@{linkedService().KeyVaultName}.vault.azure.net/"
+        },
+        "AubiSQLDatabase_connectionString": {
+            "value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=@{linkedService().servername}.database.windows.net;Initial Catalog=@{linkedService().databasename}"
+        },
+        "AzureManagementAPI_properties_typeProperties_aadResourceId": {
+            "value": "https://management.azure.com/"
+        },
+        "AzureManagementAPI_properties_typeProperties_servicePrincipalId": {
+            "value": "@{linkedService().servicePrincipalId}"
+        },
+        "AzureManagementAPI_properties_typeProperties_tenant": {
+            "value": "@{linkedService().tenantId}"
+        },
+        "AzureManagementAPI_properties_typeProperties_url": {
+            "value": "https://management.azure.com"
+        },
+        "DailyOvernightProcessing_properties_RefreshAllData_ExistingExports_parameters_AdvisorAPIVersionGenerateRecs": {
+            "value": "2017-04-19"
+        },
+        "DailyOvernightProcessing_properties_RefreshAllData_ExistingExports_parameters_AdvisorAPIVersionGetRecs": {
+            "value": "2020-01-01"
+        },
+        "DailyOvernightProcessing_properties_RefreshAllData_ExistingExports_parameters_AdvisorGenerationWaitSecs": {
+            "value": 600
+        },
+        "DailyOvernightProcessing_properties_RefreshAllData_ExistingExports_parameters_ConsumptionAPIVersion": {
+            "value": "2019-10-01"
+        },
+        "DailyOvernightProcessing_properties_RefreshAllData_ExistingExports_parameters_CostManagementExportsAPIVersion": {
+            "value": "2021-01-01"
+        },
+        "DailyOvernightProcessing_properties_RefreshAllData_ExistingExports_parameters_CostMangementReservationDetailsAPIVersion": {
+            "value": "2019-11-01"
+        },
+        "DailyOvernightProcessing_properties_RefreshAllData_ExistingExports_parameters_costopt_StorageDirectoryName": {
+            "value": "download"
+        },
+        "DailyOvernightProcessing_properties_RefreshAllData_ExistingExports_parameters_FullRefreshStartDate": {
+            "value": "2021-01-01"
+        },
+        "DailyOvernightProcessing_properties_RefreshAllData_ExistingExports_parameters_UsageExportDirectory": {
+            "value": "download/usage"
+        },
+        "factoryName": {
+            "value": "costoptadfqa"
+        },
+        "HTTPFile_properties_typeProperties_url": {
+            "value": "@{linkedService().FileURL}"
+        }
+    }
+}

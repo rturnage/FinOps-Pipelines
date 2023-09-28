@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+###################################################################
+# Check windows line endings for passed in files.
+#
+# Params
+#   Files. path to one or more files separated by spaces
+###################################################################
+
+# Stop on errors
+set -e
+
+printf 'Running %s with args %s\n' "$0" "$*"
+
+for i do
+    find ./**/ -not -type d -exec file "{}" ";" | grep CRLF
+    if  grep CRLF "$i"; then
+        echo "Found CRLF in $1."
+        exit 1
+    fi
+done

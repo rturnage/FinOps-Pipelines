@@ -1,0 +1,113 @@
+{
+	"name": "LoadISFRatioToSQL",
+	"properties": {
+		"activities": [
+			{
+				"name": "CopyIFSRatioToSQL",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"preCopyScript": {
+							"value": "delete @{pipeline().parameters.TargetDBSchema}.@{pipeline().parameters.TargetDBTable}",
+							"type": "Expression"
+						},
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "CSVFileDataset",
+						"type": "DatasetReference",
+						"parameters": {
+							"StorageAccount": {
+								"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+								"type": "Expression"
+							},
+							"Container": {
+								"value": "@pipeline().globalParameters.costopt_Container",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@pipeline().parameters.Download_StorageBlobDirectory",
+								"type": "Expression"
+							},
+							"File": {
+								"value": "@pipeline().parameters.DownloadTargetFilename",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "costoptSQLTableDataset",
+						"type": "DatasetReference",
+						"parameters": {
+							"tablename": {
+								"value": "@pipeline().parameters.TargetDBTable",
+								"type": "Expression"
+							},
+							"schemaname": {
+								"value": "@pipeline().parameters.TargetDBSchema",
+								"type": "Expression"
+							},
+							"sqlservername": {
+								"value": "@pipeline().globalParameters.costopt_sqlservername",
+								"type": "Expression"
+							},
+							"sqldbname": {
+								"value": "@pipeline().globalParameters.costopt_sqldbname",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"Download_StorageBlobDirectory": {
+				"type": "string",
+				"defaultValue": "download/isfratio"
+			},
+			"DownloadTargetFilename": {
+				"type": "string",
+				"defaultValue": "isfratio.csv"
+			},
+			"TargetDBSchema": {
+				"type": "string",
+				"defaultValue": "costmanagement"
+			},
+			"TargetDBTable": {
+				"type": "string",
+				"defaultValue": "ISFData"
+			}
+		},
+		"folder": {
+			"name": "ISFRatio"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-09-21T22:04:41Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

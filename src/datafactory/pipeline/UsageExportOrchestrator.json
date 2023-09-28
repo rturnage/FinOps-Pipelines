@@ -1,0 +1,303 @@
+{
+	"name": "UsageExportOrchestrator",
+	"properties": {
+		"description": "Calls the UsageExport pipeline by breaking a large date range into smaller configurable chunks",
+		"activities": [
+			{
+				"name": "ForEachExportType",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "ManagePartitions",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.ExportTypeArray",
+						"type": "Expression"
+					},
+					"batchCount": 2,
+					"activities": [
+						{
+							"name": "UsageExportForDateRange",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "UsageExportForDateRange",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"exportName_prefix": {
+										"value": "@pipeline().parameters.exportName_prefix",
+										"type": "Expression"
+									},
+									"scope": {
+										"value": "@pipeline().parameters.scope",
+										"type": "Expression"
+									},
+									"CostManagementApiVersion": {
+										"value": "@pipeline().parameters.CostManagementApiVersion",
+										"type": "Expression"
+									},
+									"UsageDownload_StorageBlobDirectory": {
+										"value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{item()}",
+										"type": "Expression"
+									},
+									"MaxExportExecutionRetries": {
+										"value": "@pipeline().parameters.MaxExportExecutionRetries",
+										"type": "Expression"
+									},
+									"StartDate": {
+										"value": "@pipeline().parameters.StartDate",
+										"type": "Expression"
+									},
+									"EndDate": {
+										"value": "@pipeline().parameters.EndDate",
+										"type": "Expression"
+									},
+									"ExportTimeframe": {
+										"value": "@pipeline().parameters.ExportTimeframe",
+										"type": "Expression"
+									},
+									"ExportType": {
+										"value": "@item()",
+										"type": "Expression"
+									},
+									"ExportStatusCheckLoopTime": {
+										"value": "@pipeline().parameters.ExportStatusCheckLoopTime",
+										"type": "Expression"
+									},
+									"DateRangeInterval": {
+										"value": "@pipeline().parameters.DateRangeInterval",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "ManagePartitions",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "costmanagement.addMonthPartitions"
+				},
+				"linkedServiceName": {
+					"referenceName": "AubiSQLDatabase",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"databasename": {
+							"value": "@pipeline().globalParameters.costopt_sqldbname",
+							"type": "Expression"
+						},
+						"servername": {
+							"value": "@pipeline().globalParameters.costopt_sqlservername",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "BuildSummaryTables",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "ForEachExportType",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "costmanagement.BuildSummaryTables"
+				},
+				"linkedServiceName": {
+					"referenceName": "AubiSQLDatabase",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"databasename": {
+							"value": "@pipeline().globalParameters.costopt_sqldbname",
+							"type": "Expression"
+						},
+						"servername": {
+							"value": "@pipeline().globalParameters.costopt_sqlservername",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "ReOrganizeActualCostIndex",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "BuildSummaryTables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "costmanagement.ReorganiseActualCostIndex"
+				},
+				"linkedServiceName": {
+					"referenceName": "AubiSQLDatabase",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"databasename": {
+							"value": "@pipeline().globalParameters.costopt_sqldbname",
+							"type": "Expression"
+						},
+						"servername": {
+							"value": "@pipeline().globalParameters.costopt_sqlservername",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "ReOrganizeAmortizedCostIndex",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "ReOrganizeActualCostIndex",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "costmanagement.ReorganiseAmortizedCostIndex"
+				},
+				"linkedServiceName": {
+					"referenceName": "AubiSQLDatabase",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"databasename": {
+							"value": "@pipeline().globalParameters.costopt_sqldbname",
+							"type": "Expression"
+						},
+						"servername": {
+							"value": "@pipeline().globalParameters.costopt_sqlservername",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"concurrency": 1,
+		"parameters": {
+			"exportName_prefix": {
+				"type": "string",
+				"defaultValue": "msftExportUsageTemp"
+			},
+			"scope": {
+				"type": "string",
+				"defaultValue": "providers/Microsoft.Billing/billingAccounts/<BillingAccountNum>"
+			},
+			"CostManagementApiVersion": {
+				"type": "string",
+				"defaultValue": "2021-01-01"
+			},
+			"UsageDownload_StorageBlobDirectory": {
+				"type": "string",
+				"defaultValue": "download/usage"
+			},
+			"MaxExportExecutionRetries": {
+				"type": "int",
+				"defaultValue": 3
+			},
+			"StartDate": {
+				"type": "string",
+				"defaultValue": "2021-09-01"
+			},
+			"EndDate": {
+				"type": "string",
+				"defaultValue": "2021-09-02"
+			},
+			"ExportTimeframe": {
+				"type": "string",
+				"defaultValue": "Custom"
+			},
+			"ExportTypeArray": {
+				"type": "array",
+				"defaultValue": [
+					"ActualCost",
+					"AmortizedCost"
+				]
+			},
+			"ExportStatusCheckLoopTime": {
+				"type": "int",
+				"defaultValue": 60
+			},
+			"DateRangeInterval": {
+				"type": "int",
+				"defaultValue": 1
+			}
+		},
+		"variables": {
+			"DateRangesToProcess": {
+				"type": "Array"
+			},
+			"BatchStartDate": {
+				"type": "String"
+			},
+			"BatchEndDate": {
+				"type": "String"
+			},
+			"ExportStartDate": {
+				"type": "String"
+			},
+			"ExportEndDate": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "UsageData"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-09-23T11:22:11Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

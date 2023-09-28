@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Create datafactory if it doesn't exist
+
+echo "Deploying ${BASH_SOURCE[0]}"
+
+# shellcheck disable=SC2164
+PROJ_ROOT_PATH=$(cd "$(dirname "$0")"/../..; pwd)
+echo "root folder: $PROJ_ROOT_PATH"
+
+echo "loading env variables"
+ENV_VARS="$(awk '!/^\s*#/' "${PROJ_ROOT_PATH}/.env" | awk '!/^\s*$/')"
+eval "$(
+  printf '%s\n' "$ENV_VARS" | while IFS='' read -r line; do
+    key=$(printf '%s\n' "$line"| sed 's/"/\\"/g' | cut -d '=' -f 1)
+    value=$(printf '%s\n' "$line" | cut -d '=' -f 2- | sed 's/"/\\\"/g' | tr -d '\f\r')
+    printf '%s\n' "export $key=\"$value\""
+  done
+)"
+
+echo "Validate $PIPELINE_ADF_NAME datafactory exists..."
+if ! az datafactory show --subscription "${PIPELINE_SUBSCRIPTION}" --resource-group "${PIPELINE_ADF_PATCH_RG}" --factory-name "${PIPELINE_ADF_NAME}"; then
+    echo "Datafactory not found. Creating $PIPELINE_ADF_NAME..."
+    az datafactory create --resource-group "$PIPELINE_ADF_PATCH_RG" --factory-name "$PIPELINE_ADF_NAME"
+fi
+echo "done"

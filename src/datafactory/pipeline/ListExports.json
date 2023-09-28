@@ -1,0 +1,135 @@
+{
+	"name": "ListExports",
+	"properties": {
+		"activities": [
+			{
+				"name": "ListExports",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "GetTenantId",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "GetClientId",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "https://management.azure.com/@{pipeline().parameters.scope}/providers/Microsoft.CostManagement/exports?api-version=@{pipeline().parameters.CostManagementAPIVersion}",
+						"type": "Expression"
+					},
+					"method": "GET",
+					"authentication": {
+						"type": "ServicePrincipal",
+						"userTenant": {
+							"value": "@activity('GetTenantId').output.value",
+							"type": "Expression"
+						},
+						"username": {
+							"value": "@activity('GetClientId').output.value",
+							"type": "Expression"
+						},
+						"resource": "https://management.azure.com",
+						"password": {
+							"type": "AzureKeyVaultSecret",
+							"store": {
+								"referenceName": "aubiKeyVault",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"KeyVaultName": {
+										"value": "@pipeline().globalParameters.costopt_KeyVaultName",
+										"type": "Expression"
+									}
+								}
+							},
+							"secretName": {
+								"value": "@pipeline().globalParameters.costopt_clientsecret_secretname",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "GetClientId",
+				"description": "Retrieve ClientId from Keyvault",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:05:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": true,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_clientId_secretname}?api-version=7.0",
+						"type": "Expression"
+					},
+					"method": "GET",
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://vault.azure.net"
+					}
+				}
+			},
+			{
+				"name": "GetTenantId",
+				"description": "Retrieve TenantId from Keyvault",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:05:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": true,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_tenantid_secretname}?api-version=7.0",
+						"type": "Expression"
+					},
+					"method": "GET",
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://vault.azure.net"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"scope": {
+				"type": "string",
+				"defaultValue": "providers/Microsoft.Billing/billingAccounts/<BillingAccountNum>"
+			},
+			"CostManagementAPIVersion": {
+				"type": "string",
+				"defaultValue": "2020-06-01"
+			}
+		},
+		"folder": {
+			"name": "UsageData"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-09-23T00:31:33Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

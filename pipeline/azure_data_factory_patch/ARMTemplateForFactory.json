@@ -1,0 +1,2883 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "aubiAzureStorage_properties_typeProperties_serviceEndpoint": {
+            "defaultValue": "@{concat('https://',linkedService().StorageAccountName,'.blob.core.windows.net')}",
+            "type": "string"
+        },
+        "AubiSQLDatabase_connectionString": {
+            "defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=@{linkedService().servername}.database.windows.net;Initial Catalog=@{linkedService().databasename}",
+            "metadata": "Secure string for 'connectionString' of 'AubiSQLDatabase'",
+            "type": "secureString"
+        },
+        "factoryName": {
+            "defaultValue": "CostManagementPatch",
+            "metadata": "Data Factory name",
+            "type": "string"
+        }
+    },
+    "resources": [
+        {
+            "apiVersion": "2018-06-01",
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/aubiAzureStorage')]"
+            ],
+            "name": "[concat(parameters('factoryName'), '/AubiBinaryFile')]",
+            "properties": {
+                "annotations": [],
+                "linkedServiceName": {
+                    "parameters": {
+                        "StorageAccountName": {
+                            "type": "Expression",
+                            "value": "@dataset().StorageAccountName"
+                        }
+                    },
+                    "referenceName": "aubiAzureStorage",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "Container": {
+                        "type": "string"
+                    },
+                    "Directory": {
+                        "type": "string"
+                    },
+                    "FIleName": {
+                        "type": "string"
+                    },
+                    "StorageAccountName": {
+                        "type": "string"
+                    }
+                },
+                "type": "Binary",
+                "typeProperties": {
+                    "location": {
+                        "container": {
+                            "type": "Expression",
+                            "value": "@dataset().Container"
+                        },
+                        "fileName": {
+                            "type": "Expression",
+                            "value": "@dataset().FIleName"
+                        },
+                        "folderPath": {
+                            "type": "Expression",
+                            "value": "@dataset().Directory"
+                        },
+                        "type": "AzureBlobStorageLocation"
+                    }
+                }
+            },
+            "type": "Microsoft.DataFactory/factories/datasets"
+        },
+        {
+            "apiVersion": "2018-06-01",
+            "dependsOn": [],
+            "name": "[concat(parameters('factoryName'), '/AubiSQLDatabase')]",
+            "properties": {
+                "annotations": [],
+                "description": "Billing datasets are written to this Azure SQL Database",
+                "parameters": {
+                    "databasename": {
+                        "defaultValue": "CMFDatabase",
+                        "type": "string"
+                    },
+                    "servername": {
+                        "defaultValue": "cfmSqlServer",
+                        "type": "string"
+                    }
+                },
+                "type": "AzureSqlDatabase",
+                "typeProperties": {
+                    "connectionString": "[parameters('AubiSQLDatabase_connectionString')]"
+                }
+            },
+            "type": "Microsoft.DataFactory/factories/linkedServices"
+        },
+        {
+            "apiVersion": "2018-06-01",
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/aubiAzureStorage')]"
+            ],
+            "name": "[concat(parameters('factoryName'), '/Binary1')]",
+            "properties": {
+                "annotations": [],
+                "linkedServiceName": {
+                    "parameters": {
+                        "StorageAccountName": {
+                            "type": "Expression",
+                            "value": "@dataset().StorageAccountName"
+                        }
+                    },
+                    "referenceName": "aubiAzureStorage",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "Container": {
+                        "type": "string"
+                    },
+                    "Directory": {
+                        "type": "string"
+                    },
+                    "StorageAccountName": {
+                        "type": "string"
+                    }
+                },
+                "type": "Binary",
+                "typeProperties": {
+                    "location": {
+                        "container": {
+                            "type": "Expression",
+                            "value": "@dataset().Container"
+                        },
+                        "folderPath": {
+                            "type": "Expression",
+                            "value": "@dataset().Directory"
+                        },
+                        "type": "AzureBlobStorageLocation"
+                    }
+                }
+            },
+            "type": "Microsoft.DataFactory/factories/datasets"
+        },
+        {
+            "apiVersion": "2018-06-01",
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/aubiAzureStorage')]"
+            ],
+            "name": "[concat(parameters('factoryName'), '/CSVFileDataset')]",
+            "properties": {
+                "annotations": [],
+                "description": "Generic CSV Dataset used in a number of aubi pipelines.\n",
+                "folder": {
+                    "name": "ProcessUsageData"
+                },
+                "linkedServiceName": {
+                    "parameters": {
+                        "StorageAccountName": {
+                            "type": "Expression",
+                            "value": "@dataset().StorageAccount"
+                        }
+                    },
+                    "referenceName": "aubiAzureStorage",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "Container": {
+                        "type": "string"
+                    },
+                    "Directory": {
+                        "type": "string"
+                    },
+                    "File": {
+                        "type": "string"
+                    },
+                    "StorageAccount": {
+                        "type": "string"
+                    }
+                },
+                "schema": [],
+                "type": "DelimitedText",
+                "typeProperties": {
+                    "columnDelimiter": ",",
+                    "escapeChar": "\"",
+                    "firstRowAsHeader": true,
+                    "location": {
+                        "container": {
+                            "type": "Expression",
+                            "value": "@dataset().Container"
+                        },
+                        "fileName": {
+                            "type": "Expression",
+                            "value": "@dataset().File"
+                        },
+                        "folderPath": {
+                            "type": "Expression",
+                            "value": "@dataset().Directory"
+                        },
+                        "type": "AzureBlobStorageLocation"
+                    },
+                    "quoteChar": "\""
+                }
+            },
+            "type": "Microsoft.DataFactory/factories/datasets"
+        },
+        {
+            "apiVersion": "2018-06-01",
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/Binary1')]",
+                "[concat(variables('factoryId'), '/datasets/AubiBinaryFile')]"
+            ],
+            "name": "[concat(parameters('factoryName'), '/GetLatestFileInFolder<replace_with_version_hash>')]",
+            "properties": {
+                "activities": [
+                    {
+                        "dependsOn": [],
+                        "name": "Get Cost Files",
+                        "policy": {
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureInput": false,
+                            "secureOutput": false,
+                            "timeout": "0.12:00:00"
+                        },
+                        "type": "GetMetadata",
+                        "typeProperties": {
+                            "dataset": {
+                                "parameters": {
+                                    "Container": {
+                                        "type": "Expression",
+                                        "value": "@pipeline().parameters.UsageDownload_StorageBlobContainer"
+                                    },
+                                    "Directory": {
+                                        "type": "Expression",
+                                        "value": "@{pipeline().parameters.CostDirectory}/@{pipeline().parameters.MonthSubfolder}"
+                                    },
+                                    "StorageAccountName": {
+                                        "type": "Expression",
+                                        "value": "@pipeline().parameters.UsageDownload_StorageAccountName"
+                                    }
+                                },
+                                "referenceName": "Binary1",
+                                "type": "DatasetReference"
+                            },
+                            "fieldList": [
+                                "childItems",
+                                "exists"
+                            ],
+                            "formatSettings": {
+                                "type": "BinaryReadSettings"
+                            },
+                            "storeSettings": {
+                                "enablePartitionDiscovery": false,
+                                "recursive": true,
+                                "type": "AzureBlobStorageReadSettings"
+                            }
+                        },
+                        "userProperties": []
+                    },
+                    {
+                        "dependsOn": [
+                            {
+                                "activity": "Get Cost Files",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "name": "Find Latest File",
+                        "type": "ForEach",
+                        "typeProperties": {
+                            "activities": [
+                                {
+                                    "dependsOn": [],
+                                    "name": "Current File Info",
+                                    "policy": {
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureInput": false,
+                                        "secureOutput": false,
+                                        "timeout": "0.12:00:00"
+                                    },
+                                    "type": "GetMetadata",
+                                    "typeProperties": {
+                                        "dataset": {
+                                            "parameters": {
+                                                "Container": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.UsageDownload_StorageBlobContainer"
+                                                },
+                                                "Directory": {
+                                                    "type": "Expression",
+                                                    "value": "@{pipeline().parameters.CostDirectory}/@{pipeline().parameters.MonthSubfolder}"
+                                                },
+                                                "FIleName": {
+                                                    "type": "Expression",
+                                                    "value": "@item().name"
+                                                },
+                                                "StorageAccountName": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.UsageDownload_StorageAccountName"
+                                                }
+                                            },
+                                            "referenceName": "AubiBinaryFile",
+                                            "type": "DatasetReference"
+                                        },
+                                        "fieldList": [
+                                            "lastModified",
+                                            "itemName",
+                                            "size"
+                                        ],
+                                        "formatSettings": {
+                                            "type": "BinaryReadSettings"
+                                        },
+                                        "storeSettings": {
+                                            "enablePartitionDiscovery": false,
+                                            "recursive": true,
+                                            "type": "AzureBlobStorageReadSettings"
+                                        }
+                                    },
+                                    "userProperties": []
+                                },
+                                {
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Current File Info",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "name": "Is Greater than Max Time",
+                                    "type": "IfCondition",
+                                    "typeProperties": {
+                                        "expression": {
+                                            "type": "Expression",
+                                            "value": "@greater(activity('Current File Info').output.lastModified, variables('maxtime'))"
+                                        },
+                                        "ifTrueActivities": [
+                                            {
+                                                "dependsOn": [],
+                                                "name": "Set maxtime to current file time",
+                                                "type": "SetVariable",
+                                                "typeProperties": {
+                                                    "value": {
+                                                        "type": "Expression",
+                                                        "value": "@activity('Current File Info').output.lastModified"
+                                                    },
+                                                    "variableName": "maxtime"
+                                                },
+                                                "userProperties": []
+                                            },
+                                            {
+                                                "dependsOn": [
+                                                    {
+                                                        "activity": "Set maxtime to current file time",
+                                                        "dependencyConditions": [
+                                                            "Succeeded"
+                                                        ]
+                                                    }
+                                                ],
+                                                "name": "Set filename by time to current file name",
+                                                "type": "SetVariable",
+                                                "typeProperties": {
+                                                    "value": {
+                                                        "type": "Expression",
+                                                        "value": "@activity('Current File Info').output.itemName"
+                                                    },
+                                                    "variableName": "filename_by_time"
+                                                },
+                                                "userProperties": []
+                                            }
+                                        ]
+                                    },
+                                    "userProperties": []
+                                },
+                                {
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Current File Info",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "name": "Is Greater than Max Size",
+                                    "type": "IfCondition",
+                                    "typeProperties": {
+                                        "expression": {
+                                            "type": "Expression",
+                                            "value": "@greater(activity('Current File Info').output.size, int(variables('maxsize')))"
+                                        },
+                                        "ifTrueActivities": [
+                                            {
+                                                "dependsOn": [],
+                                                "name": "Set maxsize to current file size",
+                                                "type": "SetVariable",
+                                                "typeProperties": {
+                                                    "value": {
+                                                        "type": "Expression",
+                                                        "value": "@string(activity('Current File Info').output.size)"
+                                                    },
+                                                    "variableName": "maxsize"
+                                                },
+                                                "userProperties": []
+                                            },
+                                            {
+                                                "dependsOn": [
+                                                    {
+                                                        "activity": "Set maxsize to current file size",
+                                                        "dependencyConditions": [
+                                                            "Succeeded"
+                                                        ]
+                                                    }
+                                                ],
+                                                "name": "Set filename by size to current file name",
+                                                "type": "SetVariable",
+                                                "typeProperties": {
+                                                    "value": {
+                                                        "type": "Expression",
+                                                        "value": "@activity('Current File Info').output.itemName"
+                                                    },
+                                                    "variableName": "filename_by_size"
+                                                },
+                                                "userProperties": []
+                                            }
+                                        ]
+                                    },
+                                    "userProperties": []
+                                }
+                            ],
+                            "items": {
+                                "type": "Expression",
+                                "value": "@if(activity('Get Cost Files').output.exists,activity('Get Cost Files').output.childItems,variables('EmptyArray')\n)"
+                            }
+                        },
+                        "userProperties": []
+                    },
+                    {
+                        "dependsOn": [
+                            {
+                                "activity": "Find Latest File",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "name": "Set Latest File Name",
+                        "type": "SetVariable",
+                        "typeProperties": {
+                            "setSystemVariable": true,
+                            "value": [
+                                {
+                                    "key": "latest_filename",
+                                    "value": {
+                                        "content": "@variables('filename_by_size')",
+                                        "type": "Expression"
+                                    }
+                                }
+                            ],
+                            "variableName": "pipelineReturnValue"
+                        },
+                        "userProperties": []
+                    }
+                ],
+                "annotations": [],
+                "folder": {
+                    "name": "UsageData"
+                },
+                "lastPublishTime": "2023-05-18T22:57:32Z",
+                "parameters": {
+                    "CostDirectory": {
+                        "defaultValue": "usage/scheduled_exports/msftCostManagementExportActualCost",
+                        "type": "string"
+                    },
+                    "MonthSubfolder": {
+                        "defaultValue": "20230101-20230131",
+                        "type": "string"
+                    },
+                    "UsageDownload_StorageAccountName": {
+                        "defaultValue": "@pipeline().globalParameters.aubi_StorageAccountName",
+                        "type": "string"
+                    },
+                    "UsageDownload_StorageBlobContainer": {
+                        "defaultValue": "manualprocess",
+                        "type": "string"
+                    }
+                },
+                "policy": {
+                    "cancelAfter": {},
+                    "elapsedTimeMetric": {}
+                },
+                "variables": {
+                    "EmptyArray": {
+                        "type": "Array"
+                    },
+                    "SubscriptionId": {
+                        "type": "String"
+                    },
+                    "filename_by_size": {
+                        "type": "String"
+                    },
+                    "filename_by_time": {
+                        "type": "String"
+                    },
+                    "latest_filename": {
+                        "type": "String"
+                    },
+                    "maxsize": {
+                        "defaultValue": "0",
+                        "type": "String"
+                    },
+                    "maxtime": {
+                        "defaultValue": "2000-01-01T00:00:00Z",
+                        "type": "String"
+                    }
+                }
+            },
+            "type": "Microsoft.DataFactory/factories/pipelines"
+        },
+        {
+            "apiVersion": "2018-06-01",
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/AubiSQLDatabase')]",
+                "[concat(variables('factoryId'), '/datasets/CSVFileDataset')]",
+                "[concat(variables('factoryId'), '/datasets/Binary1')]",
+                "[concat(variables('factoryId'), '/pipelines/GetLatestFileInFolder<replace_with_version_hash>')]",
+                "[concat(variables('factoryId'), '/datasets/aubiSQLTableDataset')]",
+                "[concat(variables('factoryId'), '/datasets/AubiBinaryFile')]"
+            ],
+            "name": "[concat(parameters('factoryName'), '/ProcessInboundUsageData<replace_with_version_hash>')]",
+            "properties": {
+                "activities": [
+                    {
+                        "dependsOn": [],
+                        "linkedServiceName": {
+                            "parameters": {
+                                "databasename": {
+                                    "type": "Expression",
+                                    "value": "@pipeline().parameters.TargetDatabase"
+                                },
+                                "servername": {
+                                    "type": "Expression",
+                                    "value": "@pipeline().parameters.TargetSqlServerName"
+                                }
+                            },
+                            "referenceName": "AubiSQLDatabase",
+                            "type": "LinkedServiceReference"
+                        },
+                        "name": "ManagePartitions",
+                        "policy": {
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureInput": false,
+                            "secureOutput": false,
+                            "timeout": "7.00:00:00"
+                        },
+                        "type": "SqlServerStoredProcedure",
+                        "typeProperties": {
+                            "storedProcedureName": "costmanagement.addMonthPartitions"
+                        },
+                        "userProperties": []
+                    },
+                    {
+                        "dependsOn": [
+                            {
+                                "activity": "Get Actual Cost Folders",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "name": "ForEach Actual Cost Folder",
+                        "type": "ForEach",
+                        "typeProperties": {
+                            "activities": [
+                                {
+                                    "dependsOn": [],
+                                    "name": "Get Most Recent Actual Files",
+                                    "type": "ExecutePipeline",
+                                    "typeProperties": {
+                                        "parameters": {
+                                            "CostDirectory": {
+                                                "type": "Expression",
+                                                "value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.ActualCostExportName}"
+                                            },
+                                            "MonthSubfolder": {
+                                                "type": "Expression",
+                                                "value": "@item().name"
+                                            },
+                                            "UsageDownload_StorageBlobContainer": {
+                                                "type": "Expression",
+                                                "value": "@pipeline().parameters.UsageDownload_StorageBlobContainer"
+                                            }
+                                        },
+                                        "pipeline": {
+                                            "referenceName": "GetLatestFileInFolder<replace_with_version_hash>",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true
+                                    },
+                                    "userProperties": []
+                                },
+                                {
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Get Most Recent Actual Files",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "linkedServiceName": {
+                                        "parameters": {
+                                            "databasename": {
+                                                "type": "Expression",
+                                                "value": "@pipeline().parameters.TargetDatabase"
+                                            },
+                                            "servername": {
+                                                "type": "Expression",
+                                                "value": "@pipeline().parameters.TargetSqlServerName"
+                                            }
+                                        },
+                                        "referenceName": "AubiSQLDatabase",
+                                        "type": "LinkedServiceReference"
+                                    },
+                                    "name": "Create Actual Cost Staging Table",
+                                    "policy": {
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureInput": false,
+                                        "secureOutput": false,
+                                        "timeout": "7.00:00:00"
+                                    },
+                                    "type": "SqlServerStoredProcedure",
+                                    "typeProperties": {
+                                        "storedProcedureName": "costmanagement.CreateTempStageTable",
+                                        "storedProcedureParameters": {
+                                            "TableName": {
+                                                "type": "String",
+                                                "value": {
+                                                    "type": "Expression",
+                                                    "value": "ActualCost_Staging_@{item().name}"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "userProperties": []
+                                },
+                                {
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Create Actual Cost Staging Table",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "inputs": [
+                                        {
+                                            "parameters": {
+                                                "Container": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.UsageDownload_StorageBlobContainer"
+                                                },
+                                                "Directory": {
+                                                    "type": "Expression",
+                                                    "value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.ActualCostExportName}/@{item().name}"
+                                                },
+                                                "File": {
+                                                    "type": "Expression",
+                                                    "value": "@{activity('Get Most Recent Actual Files').output.pipelineReturnValue.latest_filename}"
+                                                },
+                                                "StorageAccount": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.UsageDownload_StorageAccountName"
+                                                }
+                                            },
+                                            "referenceName": "CSVFileDataset",
+                                            "type": "DatasetReference"
+                                        }
+                                    ],
+                                    "name": "LoadActualCostToSQL",
+                                    "outputs": [
+                                        {
+                                            "parameters": {
+                                                "schemaname": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.TargetSchemaName"
+                                                },
+                                                "sqldbname": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.TargetDatabase"
+                                                },
+                                                "sqlservername": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.TargetSqlServerName"
+                                                },
+                                                "tablename": {
+                                                    "type": "Expression",
+                                                    "value": "ActualCost_Staging_@{item().name}"
+                                                }
+                                            },
+                                            "referenceName": "aubiSQLTableDataset",
+                                            "type": "DatasetReference"
+                                        }
+                                    ],
+                                    "policy": {
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureInput": false,
+                                        "secureOutput": false,
+                                        "timeout": "0.02:00:00"
+                                    },
+                                    "type": "Copy",
+                                    "typeProperties": {
+                                        "enableStaging": false,
+                                        "sink": {
+                                            "disableMetricsCollection": false,
+                                            "sqlWriterUseTableLock": true,
+                                            "type": "AzureSqlSink",
+                                            "writeBehavior": "insert"
+                                        },
+                                        "source": {
+                                            "formatSettings": {
+                                                "type": "DelimitedTextReadSettings"
+                                            },
+                                            "storeSettings": {
+                                                "enablePartitionDiscovery": false,
+                                                "recursive": false,
+                                                "type": "AzureBlobStorageReadSettings"
+                                            },
+                                            "type": "DelimitedTextSource"
+                                        },
+                                        "translator": {
+                                            "mappings": [
+                                                {
+                                                    "sink": {
+                                                        "name": "InvoiceSectionName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "InvoiceSectionName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "AccountName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "AccountName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "AccountOwnerId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "AccountOwnerId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "SubscriptionId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "SubscriptionId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "SubscriptionName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "SubscriptionName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ResourceGroup",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ResourceGroup",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ResourceLocation",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ResourceLocation",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "Date",
+                                                        "type": "DateTime"
+                                                    },
+                                                    "source": {
+                                                        "name": "Date",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ProductName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ProductName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "MeterCategory",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "MeterCategory",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "MeterSubCategory",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "MeterSubCategory",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "MeterId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "MeterId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "MeterName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "MeterName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "MeterRegion",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "MeterRegion",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "UnitOfMeasure",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "UnitOfMeasure",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "Quantity",
+                                                        "type": "Decimal"
+                                                    },
+                                                    "source": {
+                                                        "name": "Quantity",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "EffectivePrice",
+                                                        "type": "Decimal"
+                                                    },
+                                                    "source": {
+                                                        "name": "EffectivePrice",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "CostInBillingCurrency",
+                                                        "type": "Decimal"
+                                                    },
+                                                    "source": {
+                                                        "name": "CostInBillingCurrency",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "CostCenter",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "CostCenter",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ConsumedService",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ConsumedService",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ResourceId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ResourceId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "Tags",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "Tags",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "OfferId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "OfferId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "AdditionalInfo",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "AdditionalInfo",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ServiceInfo1",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ServiceInfo1",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ServiceInfo2",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ServiceInfo2",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ResourceName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ResourceName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ReservationId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ReservationId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ReservationName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ReservationName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "UnitPrice",
+                                                        "type": "Decimal"
+                                                    },
+                                                    "source": {
+                                                        "name": "UnitPrice",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ProductOrderId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ProductOrderId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ProductOrderName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ProductOrderName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "Term",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "Term",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "PublisherType",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "PublisherType",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "PublisherName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "PublisherName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ChargeType",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ChargeType",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "Frequency",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "Frequency",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "PricingModel",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "PricingModel",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "AvailabilityZone",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "AvailabilityZone",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "BillingAccountId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "BillingAccountId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "BillingAccountName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "BillingAccountName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "BillingCurrencyCode",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "BillingCurrencyCode",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "BillingPeriodStartDate",
+                                                        "type": "DateTime"
+                                                    },
+                                                    "source": {
+                                                        "name": "BillingPeriodStartDate",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "BillingPeriodEndDate",
+                                                        "type": "DateTime"
+                                                    },
+                                                    "source": {
+                                                        "name": "BillingPeriodEndDate",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "BillingProfileId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "BillingProfileId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "BillingProfileName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "BillingProfileName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "InvoiceSectionId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "InvoiceSectionId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "IsAzureCreditEligible",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "IsAzureCreditEligible",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "PartNumber",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "PartNumber",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "PayGPrice",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "PayGPrice",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "PlanName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "PlanName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ServiceFamily",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ServiceFamily",
+                                                        "type": "String"
+                                                    }
+                                                }
+                                            ],
+                                            "type": "TabularTranslator"
+                                        },
+                                        "validateDataConsistency": true
+                                    },
+                                    "userProperties": []
+                                },
+                                {
+                                    "dependsOn": [
+                                        {
+                                            "activity": "LoadActualCostToSQL",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "linkedServiceName": {
+                                        "parameters": {
+                                            "databasename": {
+                                                "type": "Expression",
+                                                "value": "@pipeline().parameters.TargetDatabase"
+                                            },
+                                            "servername": {
+                                                "type": "Expression",
+                                                "value": "@pipeline().parameters.TargetSqlServerName"
+                                            }
+                                        },
+                                        "referenceName": "AubiSQLDatabase",
+                                        "type": "LinkedServiceReference"
+                                    },
+                                    "name": "CalculateActualCostStagingColumns",
+                                    "policy": {
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureInput": false,
+                                        "secureOutput": false,
+                                        "timeout": "7.00:00:00"
+                                    },
+                                    "type": "SqlServerStoredProcedure",
+                                    "typeProperties": {
+                                        "storedProcedureName": "costmanagement.CalculateStagingColumns",
+                                        "storedProcedureParameters": {
+                                            "TableName": {
+                                                "type": "String",
+                                                "value": {
+                                                    "type": "Expression",
+                                                    "value": "ActualCost_Staging_@{item().name}"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "userProperties": []
+                                },
+                                {
+                                    "dependsOn": [
+                                        {
+                                            "activity": "CalculateActualCostStagingColumns",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "linkedServiceName": {
+                                        "parameters": {
+                                            "databasename": {
+                                                "type": "Expression",
+                                                "value": "@pipeline().parameters.TargetDatabase"
+                                            },
+                                            "servername": {
+                                                "type": "Expression",
+                                                "value": "@pipeline().parameters.TargetSqlServerName"
+                                            }
+                                        },
+                                        "referenceName": "AubiSQLDatabase",
+                                        "type": "LinkedServiceReference"
+                                    },
+                                    "name": "UpdateActualTargetFromStaging",
+                                    "policy": {
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureInput": false,
+                                        "secureOutput": false,
+                                        "timeout": "7.00:00:00"
+                                    },
+                                    "type": "SqlServerStoredProcedure",
+                                    "typeProperties": {
+                                        "storedProcedureName": "costmanagement.UpdateTargetFromStaging",
+                                        "storedProcedureParameters": {
+                                            "StagingTableName": {
+                                                "type": "String",
+                                                "value": {
+                                                    "type": "Expression",
+                                                    "value": "ActualCost_Staging_@{item().name}"
+                                                }
+                                            },
+                                            "TargetTableName": {
+                                                "type": "String",
+                                                "value": {
+                                                    "type": "String",
+                                                    "value": "ActualCost"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "userProperties": []
+                                },
+                                {
+                                    "dependsOn": [
+                                        {
+                                            "activity": "LoadActualCostToSQL",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "description": "Move files copied into sql to processed folder.",
+                                    "inputs": [
+                                        {
+                                            "parameters": {
+                                                "Container": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.UsageDownload_StorageBlobContainer"
+                                                },
+                                                "Directory": {
+                                                    "type": "Expression",
+                                                    "value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.ActualCostExportName}/@{item().name}"
+                                                },
+                                                "FIleName": {
+                                                    "type": "Expression",
+                                                    "value": "@{activity('Get Most Recent Actual Files').output.pipelineReturnValue.latest_filename}"
+                                                },
+                                                "StorageAccountName": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.UsageDownload_StorageAccountName"
+                                                }
+                                            },
+                                            "referenceName": "AubiBinaryFile",
+                                            "type": "DatasetReference"
+                                        }
+                                    ],
+                                    "name": "Move Processed ActualCost Files",
+                                    "outputs": [
+                                        {
+                                            "parameters": {
+                                                "Container": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.UsageDownload_StorageBlobContainer"
+                                                },
+                                                "Directory": {
+                                                    "type": "Expression",
+                                                    "value": "processed/@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.ActualCostExportName}/@{item().name}"
+                                                },
+                                                "FIleName": {
+                                                    "type": "Expression",
+                                                    "value": "@{activity('Get Most Recent Actual Files').output.pipelineReturnValue.latest_filename}"
+                                                },
+                                                "StorageAccountName": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.UsageDownload_StorageAccountName"
+                                                }
+                                            },
+                                            "referenceName": "AubiBinaryFile",
+                                            "type": "DatasetReference"
+                                        }
+                                    ],
+                                    "policy": {
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureInput": false,
+                                        "secureOutput": false,
+                                        "timeout": "0.12:00:00"
+                                    },
+                                    "type": "Copy",
+                                    "typeProperties": {
+                                        "enableStaging": false,
+                                        "sink": {
+                                            "storeSettings": {
+                                                "type": "AzureBlobStorageWriteSettings"
+                                            },
+                                            "type": "BinarySink"
+                                        },
+                                        "source": {
+                                            "formatSettings": {
+                                                "type": "BinaryReadSettings"
+                                            },
+                                            "storeSettings": {
+                                                "deleteFilesAfterCompletion": true,
+                                                "recursive": false,
+                                                "type": "AzureBlobStorageReadSettings"
+                                            },
+                                            "type": "BinarySource"
+                                        }
+                                    },
+                                    "userProperties": []
+                                }
+                            ],
+                            "isSequential": false,
+                            "items": {
+                                "type": "Expression",
+                                "value": "@if( \n    activity('Get Actual Cost Folders').output.exists,  \n    activity('Get Actual Cost Folders').output.childItems, \n    variables('EmptyArray')\n    )"
+                            }
+                        },
+                        "userProperties": []
+                    },
+                    {
+                        "dependsOn": [
+                            {
+                                "activity": "ManagePartitions",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "name": "Get Actual Cost Folders",
+                        "policy": {
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureInput": false,
+                            "secureOutput": false,
+                            "timeout": "0.12:00:00"
+                        },
+                        "type": "GetMetadata",
+                        "typeProperties": {
+                            "dataset": {
+                                "parameters": {
+                                    "Container": {
+                                        "type": "Expression",
+                                        "value": "@pipeline().parameters.UsageDownload_StorageBlobContainer"
+                                    },
+                                    "Directory": {
+                                        "type": "Expression",
+                                        "value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.ActualCostExportName}"
+                                    },
+                                    "File": {
+                                        "type": "Expression",
+                                        "value": "@trim('')"
+                                    },
+                                    "StorageAccount": {
+                                        "type": "Expression",
+                                        "value": "@pipeline().parameters.UsageDownload_StorageAccountName"
+                                    }
+                                },
+                                "referenceName": "CSVFileDataset",
+                                "type": "DatasetReference"
+                            },
+                            "fieldList": [
+                                "childItems",
+                                "exists"
+                            ],
+                            "formatSettings": {
+                                "type": "DelimitedTextReadSettings"
+                            },
+                            "storeSettings": {
+                                "enablePartitionDiscovery": false,
+                                "recursive": true,
+                                "type": "AzureBlobStorageReadSettings"
+                            }
+                        },
+                        "userProperties": []
+                    },
+                    {
+                        "dependsOn": [
+                            {
+                                "activity": "ForEach Actual Cost Folder",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "description": "Move files skipped to skipped folder.",
+                        "inputs": [
+                            {
+                                "parameters": {
+                                    "Container": {
+                                        "type": "Expression",
+                                        "value": "@pipeline().parameters.UsageDownload_StorageBlobContainer"
+                                    },
+                                    "Directory": {
+                                        "type": "Expression",
+                                        "value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.ActualCostExportName}"
+                                    },
+                                    "StorageAccountName": {
+                                        "type": "Expression",
+                                        "value": "@pipeline().parameters.UsageDownload_StorageAccountName"
+                                    }
+                                },
+                                "referenceName": "Binary1",
+                                "type": "DatasetReference"
+                            }
+                        ],
+                        "name": "Move Skipped ActualCost Files",
+                        "outputs": [
+                            {
+                                "parameters": {
+                                    "Container": {
+                                        "type": "Expression",
+                                        "value": "@pipeline().parameters.UsageDownload_StorageBlobContainer"
+                                    },
+                                    "Directory": {
+                                        "type": "Expression",
+                                        "value": "skipped/@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.ActualCostExportName}"
+                                    },
+                                    "StorageAccountName": {
+                                        "type": "Expression",
+                                        "value": "@pipeline().parameters.UsageDownload_StorageAccountName"
+                                    }
+                                },
+                                "referenceName": "Binary1",
+                                "type": "DatasetReference"
+                            }
+                        ],
+                        "policy": {
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureInput": false,
+                            "secureOutput": false,
+                            "timeout": "0.12:00:00"
+                        },
+                        "type": "Copy",
+                        "typeProperties": {
+                            "enableStaging": false,
+                            "sink": {
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageWriteSettings"
+                                },
+                                "type": "BinarySink"
+                            },
+                            "source": {
+                                "formatSettings": {
+                                    "type": "BinaryReadSettings"
+                                },
+                                "storeSettings": {
+                                    "deleteFilesAfterCompletion": true,
+                                    "recursive": true,
+                                    "type": "AzureBlobStorageReadSettings",
+                                    "wildcardFileName": "*.csv",
+                                    "wildcardFolderPath": {
+                                        "type": "Expression",
+                                        "value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.ActualCostExportName}"
+                                    }
+                                },
+                                "type": "BinarySource"
+                            }
+                        },
+                        "userProperties": []
+                    },
+                    {
+                        "dependsOn": [
+                            {
+                                "activity": "Get Amortized Cost Folders",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "name": "ForEach Amortized Cost Folder",
+                        "type": "ForEach",
+                        "typeProperties": {
+                            "activities": [
+                                {
+                                    "dependsOn": [],
+                                    "name": "Get Most Recent Amortized Files",
+                                    "type": "ExecutePipeline",
+                                    "typeProperties": {
+                                        "parameters": {
+                                            "CostDirectory": {
+                                                "type": "Expression",
+                                                "value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.AmortizedCostExportName}"
+                                            },
+                                            "MonthSubfolder": {
+                                                "type": "Expression",
+                                                "value": "@item().name"
+                                            },
+                                            "UsageDownload_StorageBlobContainer": {
+                                                "type": "Expression",
+                                                "value": "@pipeline().parameters.UsageDownload_StorageBlobContainer"
+                                            }
+                                        },
+                                        "pipeline": {
+                                            "referenceName": "GetLatestFileInFolder<replace_with_version_hash>",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true
+                                    },
+                                    "userProperties": []
+                                },
+                                {
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Get Most Recent Amortized Files",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "linkedServiceName": {
+                                        "parameters": {
+                                            "databasename": {
+                                                "type": "Expression",
+                                                "value": "@pipeline().parameters.TargetDatabase"
+                                            },
+                                            "servername": {
+                                                "type": "Expression",
+                                                "value": "@pipeline().parameters.TargetSqlServerName"
+                                            }
+                                        },
+                                        "referenceName": "AubiSQLDatabase",
+                                        "type": "LinkedServiceReference"
+                                    },
+                                    "name": "Create Amortized Staging Table",
+                                    "policy": {
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureInput": false,
+                                        "secureOutput": false,
+                                        "timeout": "7.00:00:00"
+                                    },
+                                    "type": "SqlServerStoredProcedure",
+                                    "typeProperties": {
+                                        "storedProcedureName": "costmanagement.CreateTempStageTable",
+                                        "storedProcedureParameters": {
+                                            "TableName": {
+                                                "type": "String",
+                                                "value": {
+                                                    "type": "Expression",
+                                                    "value": "AmortizedCost_Staging_@{item().name}"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "userProperties": []
+                                },
+                                {
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Create Amortized Staging Table",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "inputs": [
+                                        {
+                                            "parameters": {
+                                                "Container": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.UsageDownload_StorageBlobContainer"
+                                                },
+                                                "Directory": {
+                                                    "type": "Expression",
+                                                    "value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.AmortizedCostExportName}/@{item().name}"
+                                                },
+                                                "File": {
+                                                    "type": "Expression",
+                                                    "value": "@{activity('Get Most Recent Amortized Files').output.pipelineReturnValue.latest_filename}"
+                                                },
+                                                "StorageAccount": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.UsageDownload_StorageAccountName"
+                                                }
+                                            },
+                                            "referenceName": "CSVFileDataset",
+                                            "type": "DatasetReference"
+                                        }
+                                    ],
+                                    "name": "LoadAmortizedCostToSQL",
+                                    "outputs": [
+                                        {
+                                            "parameters": {
+                                                "schemaname": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.TargetSchemaName"
+                                                },
+                                                "sqldbname": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.TargetDatabase"
+                                                },
+                                                "sqlservername": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.TargetSqlServerName"
+                                                },
+                                                "tablename": {
+                                                    "type": "Expression",
+                                                    "value": "AmortizedCost_Staging_@{item().name}"
+                                                }
+                                            },
+                                            "referenceName": "aubiSQLTableDataset",
+                                            "type": "DatasetReference"
+                                        }
+                                    ],
+                                    "policy": {
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureInput": false,
+                                        "secureOutput": false,
+                                        "timeout": "0.02:00:00"
+                                    },
+                                    "type": "Copy",
+                                    "typeProperties": {
+                                        "enableStaging": false,
+                                        "sink": {
+                                            "disableMetricsCollection": false,
+                                            "sqlWriterUseTableLock": true,
+                                            "type": "AzureSqlSink",
+                                            "writeBehavior": "insert"
+                                        },
+                                        "source": {
+                                            "formatSettings": {
+                                                "type": "DelimitedTextReadSettings"
+                                            },
+                                            "storeSettings": {
+                                                "enablePartitionDiscovery": false,
+                                                "recursive": false,
+                                                "type": "AzureBlobStorageReadSettings"
+                                            },
+                                            "type": "DelimitedTextSource"
+                                        },
+                                        "translator": {
+                                            "mappings": [
+                                                {
+                                                    "sink": {
+                                                        "name": "InvoiceSectionName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "InvoiceSectionName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "AccountName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "AccountName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "AccountOwnerId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "AccountOwnerId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "SubscriptionId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "SubscriptionId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "SubscriptionName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "SubscriptionName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ResourceGroup",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ResourceGroup",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ResourceLocation",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ResourceLocation",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "Date",
+                                                        "type": "DateTime"
+                                                    },
+                                                    "source": {
+                                                        "name": "Date",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ProductName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ProductName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "MeterCategory",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "MeterCategory",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "MeterSubCategory",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "MeterSubCategory",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "MeterId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "MeterId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "MeterName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "MeterName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "MeterRegion",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "MeterRegion",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "UnitOfMeasure",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "UnitOfMeasure",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "Quantity",
+                                                        "type": "Decimal"
+                                                    },
+                                                    "source": {
+                                                        "name": "Quantity",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "EffectivePrice",
+                                                        "type": "Decimal"
+                                                    },
+                                                    "source": {
+                                                        "name": "EffectivePrice",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "CostInBillingCurrency",
+                                                        "type": "Decimal"
+                                                    },
+                                                    "source": {
+                                                        "name": "CostInBillingCurrency",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "CostCenter",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "CostCenter",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ConsumedService",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ConsumedService",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ResourceId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ResourceId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "Tags",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "Tags",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "OfferId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "OfferId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "AdditionalInfo",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "AdditionalInfo",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ServiceInfo1",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ServiceInfo1",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ServiceInfo2",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ServiceInfo2",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ResourceName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ResourceName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ReservationId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ReservationId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ReservationName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ReservationName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "UnitPrice",
+                                                        "type": "Decimal"
+                                                    },
+                                                    "source": {
+                                                        "name": "UnitPrice",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ProductOrderId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ProductOrderId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ProductOrderName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ProductOrderName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "Term",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "Term",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "PublisherType",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "PublisherType",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "PublisherName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "PublisherName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ChargeType",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ChargeType",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "Frequency",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "Frequency",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "PricingModel",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "PricingModel",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "AvailabilityZone",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "AvailabilityZone",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "BillingAccountId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "BillingAccountId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "BillingAccountName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "BillingAccountName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "BillingCurrencyCode",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "BillingCurrencyCode",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "BillingPeriodStartDate",
+                                                        "type": "DateTime"
+                                                    },
+                                                    "source": {
+                                                        "name": "BillingPeriodStartDate",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "BillingPeriodEndDate",
+                                                        "type": "DateTime"
+                                                    },
+                                                    "source": {
+                                                        "name": "BillingPeriodEndDate",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "BillingProfileId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "BillingProfileId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "BillingProfileName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "BillingProfileName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "InvoiceSectionId",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "InvoiceSectionId",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "IsAzureCreditEligible",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "IsAzureCreditEligible",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "PartNumber",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "PartNumber",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "PayGPrice",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "PayGPrice",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "PlanName",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "PlanName",
+                                                        "type": "String"
+                                                    }
+                                                },
+                                                {
+                                                    "sink": {
+                                                        "name": "ServiceFamily",
+                                                        "type": "String"
+                                                    },
+                                                    "source": {
+                                                        "name": "ServiceFamily",
+                                                        "type": "String"
+                                                    }
+                                                }
+                                            ],
+                                            "type": "TabularTranslator"
+                                        },
+                                        "validateDataConsistency": true
+                                    },
+                                    "userProperties": []
+                                },
+                                {
+                                    "dependsOn": [
+                                        {
+                                            "activity": "LoadAmortizedCostToSQL",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "linkedServiceName": {
+                                        "parameters": {
+                                            "databasename": {
+                                                "type": "Expression",
+                                                "value": "@pipeline().parameters.TargetDatabase"
+                                            },
+                                            "servername": {
+                                                "type": "Expression",
+                                                "value": "@pipeline().parameters.TargetSqlServerName"
+                                            }
+                                        },
+                                        "referenceName": "AubiSQLDatabase",
+                                        "type": "LinkedServiceReference"
+                                    },
+                                    "name": "CalculateAmortizedStagingColumns",
+                                    "policy": {
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureInput": false,
+                                        "secureOutput": false,
+                                        "timeout": "7.00:00:00"
+                                    },
+                                    "type": "SqlServerStoredProcedure",
+                                    "typeProperties": {
+                                        "storedProcedureName": "costmanagement.CalculateStagingColumns",
+                                        "storedProcedureParameters": {
+                                            "TableName": {
+                                                "type": "String",
+                                                "value": {
+                                                    "type": "Expression",
+                                                    "value": "AmortizedCost_Staging_@{item().name}"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "userProperties": []
+                                },
+                                {
+                                    "dependsOn": [
+                                        {
+                                            "activity": "CalculateAmortizedStagingColumns",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "linkedServiceName": {
+                                        "parameters": {
+                                            "databasename": {
+                                                "type": "Expression",
+                                                "value": "@pipeline().parameters.TargetDatabase"
+                                            },
+                                            "servername": {
+                                                "type": "Expression",
+                                                "value": "@pipeline().parameters.TargetSqlServerName"
+                                            }
+                                        },
+                                        "referenceName": "AubiSQLDatabase",
+                                        "type": "LinkedServiceReference"
+                                    },
+                                    "name": "UpdateAmortizedTargetFromStaging",
+                                    "policy": {
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureInput": false,
+                                        "secureOutput": false,
+                                        "timeout": "7.00:00:00"
+                                    },
+                                    "type": "SqlServerStoredProcedure",
+                                    "typeProperties": {
+                                        "storedProcedureName": "costmanagement.UpdateTargetFromStaging",
+                                        "storedProcedureParameters": {
+                                            "StagingTableName": {
+                                                "type": "String",
+                                                "value": {
+                                                    "type": "Expression",
+                                                    "value": "AmortizedCost_Staging_@{item().name}"
+                                                }
+                                            },
+                                            "TargetTableName": {
+                                                "type": "String",
+                                                "value": {
+                                                    "type": "String",
+                                                    "value": "AmortizedCost"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "userProperties": []
+                                },
+                                {
+                                    "dependsOn": [
+                                        {
+                                            "activity": "LoadAmortizedCostToSQL",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "description": "Move files copied into sql to processed folder.",
+                                    "inputs": [
+                                        {
+                                            "parameters": {
+                                                "Container": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.UsageDownload_StorageBlobContainer"
+                                                },
+                                                "Directory": {
+                                                    "type": "Expression",
+                                                    "value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.AmortizedCostExportName}/@{item().name}"
+                                                },
+                                                "FIleName": {
+                                                    "type": "Expression",
+                                                    "value": "@{activity('Get Most Recent Amortized Files').output.pipelineReturnValue.latest_filename}"
+                                                },
+                                                "StorageAccountName": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.UsageDownload_StorageAccountName"
+                                                }
+                                            },
+                                            "referenceName": "AubiBinaryFile",
+                                            "type": "DatasetReference"
+                                        }
+                                    ],
+                                    "name": "Move Processed AmoritzedCost Files",
+                                    "outputs": [
+                                        {
+                                            "parameters": {
+                                                "Container": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.UsageDownload_StorageBlobContainer"
+                                                },
+                                                "Directory": {
+                                                    "type": "Expression",
+                                                    "value": "processed/@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.AmortizedCostExportName}/@{item().name}"
+                                                },
+                                                "FIleName": {
+                                                    "type": "Expression",
+                                                    "value": "@{activity('Get Most Recent Amortized Files').output.pipelineReturnValue.latest_filename}"
+                                                },
+                                                "StorageAccountName": {
+                                                    "type": "Expression",
+                                                    "value": "@pipeline().parameters.UsageDownload_StorageAccountName"
+                                                }
+                                            },
+                                            "referenceName": "AubiBinaryFile",
+                                            "type": "DatasetReference"
+                                        }
+                                    ],
+                                    "policy": {
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureInput": false,
+                                        "secureOutput": false,
+                                        "timeout": "0.12:00:00"
+                                    },
+                                    "type": "Copy",
+                                    "typeProperties": {
+                                        "enableStaging": false,
+                                        "sink": {
+                                            "storeSettings": {
+                                                "type": "AzureBlobStorageWriteSettings"
+                                            },
+                                            "type": "BinarySink"
+                                        },
+                                        "source": {
+                                            "formatSettings": {
+                                                "type": "BinaryReadSettings"
+                                            },
+                                            "storeSettings": {
+                                                "deleteFilesAfterCompletion": true,
+                                                "recursive": false,
+                                                "type": "AzureBlobStorageReadSettings"
+                                            },
+                                            "type": "BinarySource"
+                                        }
+                                    },
+                                    "userProperties": []
+                                }
+                            ],
+                            "isSequential": false,
+                            "items": {
+                                "type": "Expression",
+                                "value": "@if( \n    activity('Get Amortized Cost Folders').output.exists,  \n    activity('Get Amortized Cost Folders').output.childItems, \n    variables('EmptyArray')\n    )"
+                            }
+                        },
+                        "userProperties": []
+                    },
+                    {
+                        "dependsOn": [
+                            {
+                                "activity": "ManagePartitions",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "name": "Get Amortized Cost Folders",
+                        "policy": {
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureInput": false,
+                            "secureOutput": false,
+                            "timeout": "0.12:00:00"
+                        },
+                        "type": "GetMetadata",
+                        "typeProperties": {
+                            "dataset": {
+                                "parameters": {
+                                    "Container": {
+                                        "type": "Expression",
+                                        "value": "@pipeline().parameters.UsageDownload_StorageBlobContainer"
+                                    },
+                                    "Directory": {
+                                        "type": "Expression",
+                                        "value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.AmortizedCostExportName}"
+                                    },
+                                    "File": {
+                                        "type": "Expression",
+                                        "value": "@trim('')"
+                                    },
+                                    "StorageAccount": {
+                                        "type": "Expression",
+                                        "value": "@pipeline().parameters.UsageDownload_StorageAccountName"
+                                    }
+                                },
+                                "referenceName": "CSVFileDataset",
+                                "type": "DatasetReference"
+                            },
+                            "fieldList": [
+                                "childItems",
+                                "exists"
+                            ],
+                            "formatSettings": {
+                                "type": "DelimitedTextReadSettings"
+                            },
+                            "storeSettings": {
+                                "enablePartitionDiscovery": false,
+                                "recursive": true,
+                                "type": "AzureBlobStorageReadSettings"
+                            }
+                        },
+                        "userProperties": []
+                    },
+                    {
+                        "dependsOn": [
+                            {
+                                "activity": "ForEach Amortized Cost Folder",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "description": "Move files skipped to skipped folder.",
+                        "inputs": [
+                            {
+                                "parameters": {
+                                    "Container": {
+                                        "type": "Expression",
+                                        "value": "@pipeline().parameters.UsageDownload_StorageBlobContainer"
+                                    },
+                                    "Directory": {
+                                        "type": "Expression",
+                                        "value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.AmortizedCostExportName}"
+                                    },
+                                    "StorageAccountName": {
+                                        "type": "Expression",
+                                        "value": "@pipeline().parameters.UsageDownload_StorageAccountName"
+                                    }
+                                },
+                                "referenceName": "Binary1",
+                                "type": "DatasetReference"
+                            }
+                        ],
+                        "name": "Move Skipped AmortizedCost Files",
+                        "outputs": [
+                            {
+                                "parameters": {
+                                    "Container": {
+                                        "type": "Expression",
+                                        "value": "@pipeline().parameters.UsageDownload_StorageBlobContainer"
+                                    },
+                                    "Directory": {
+                                        "type": "Expression",
+                                        "value": "skipped/@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.AmortizedCostExportName}"
+                                    },
+                                    "StorageAccountName": {
+                                        "type": "Expression",
+                                        "value": "@pipeline().parameters.UsageDownload_StorageAccountName"
+                                    }
+                                },
+                                "referenceName": "Binary1",
+                                "type": "DatasetReference"
+                            }
+                        ],
+                        "policy": {
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureInput": false,
+                            "secureOutput": false,
+                            "timeout": "0.12:00:00"
+                        },
+                        "type": "Copy",
+                        "typeProperties": {
+                            "enableStaging": false,
+                            "sink": {
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageWriteSettings"
+                                },
+                                "type": "BinarySink"
+                            },
+                            "source": {
+                                "formatSettings": {
+                                    "type": "BinaryReadSettings"
+                                },
+                                "storeSettings": {
+                                    "deleteFilesAfterCompletion": true,
+                                    "recursive": true,
+                                    "type": "AzureBlobStorageReadSettings",
+                                    "wildcardFileName": "*.csv",
+                                    "wildcardFolderPath": {
+                                        "type": "Expression",
+                                        "value": "@{pipeline().parameters.UsageDownload_StorageBlobDirectory}/@{pipeline().parameters.AmortizedCostExportName}"
+                                    }
+                                },
+                                "type": "BinarySource"
+                            }
+                        },
+                        "userProperties": []
+                    },
+                    {
+                        "dependsOn": [
+                            {
+                                "activity": "ForEach Actual Cost Folder",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "linkedServiceName": {
+                            "parameters": {
+                                "databasename": {
+                                    "type": "Expression",
+                                    "value": "@pipeline().parameters.TargetDatabase"
+                                },
+                                "servername": {
+                                    "type": "Expression",
+                                    "value": "@pipeline().parameters.TargetSqlServerName"
+                                }
+                            },
+                            "referenceName": "AubiSQLDatabase",
+                            "type": "LinkedServiceReference"
+                        },
+                        "name": "Update Actual Summary Table",
+                        "policy": {
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureInput": false,
+                            "secureOutput": false,
+                            "timeout": "7.00:00:00"
+                        },
+                        "type": "SqlServerStoredProcedure",
+                        "typeProperties": {
+                            "storedProcedureName": "costmanagement.UpdateActualCostSummaryTable",
+                            "storedProcedureParameters": {
+                                "DateRangeEnd": {
+                                    "type": "Datetime",
+                                    "value": {
+                                        "type": "Expression",
+                                        "value": "@adddays( utcnow(), 1)"
+                                    }
+                                },
+                                "DateRangeStart": {
+                                    "type": "Datetime",
+                                    "value": {
+                                        "type": "Expression",
+                                        "value": "@adddays( utcnow(), -7)"
+                                    }
+                                }
+                            }
+                        },
+                        "userProperties": []
+                    },
+                    {
+                        "dependsOn": [
+                            {
+                                "activity": "ForEach Amortized Cost Folder",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "linkedServiceName": {
+                            "parameters": {
+                                "databasename": {
+                                    "type": "Expression",
+                                    "value": "@pipeline().parameters.TargetDatabase"
+                                },
+                                "servername": {
+                                    "type": "Expression",
+                                    "value": "@pipeline().parameters.TargetSqlServerName"
+                                }
+                            },
+                            "referenceName": "AubiSQLDatabase",
+                            "type": "LinkedServiceReference"
+                        },
+                        "name": "Update Amortized Summary Table",
+                        "policy": {
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureInput": false,
+                            "secureOutput": false,
+                            "timeout": "7.00:00:00"
+                        },
+                        "type": "SqlServerStoredProcedure",
+                        "typeProperties": {
+                            "storedProcedureName": "costmanagement.UpdateAmortizedCostSummaryTable",
+                            "storedProcedureParameters": {
+                                "DateRangeEnd": {
+                                    "type": "Datetime",
+                                    "value": {
+                                        "type": "Expression",
+                                        "value": "@adddays( utcnow(), 1)"
+                                    }
+                                },
+                                "DateRangeStart": {
+                                    "type": "Datetime",
+                                    "value": {
+                                        "type": "Expression",
+                                        "value": "@adddays( utcnow(), -31)"
+                                    }
+                                }
+                            }
+                        },
+                        "userProperties": []
+                    }
+                ],
+                "annotations": [],
+                "description": "This pipeline looks for any usage files created by a cost management export and loads them to the database",
+                "folder": {
+                    "name": "UsageData"
+                },
+                "lastPublishTime": "2023-05-18T22:33:48Z",
+                "parameters": {
+                    "ActualCostExportName": {
+                        "defaultValue": "msftCostManagementExportActualCost",
+                        "type": "string"
+                    },
+                    "AmortizedCostExportName": {
+                        "defaultValue": "msftCostManagementExportAmortizedCost",
+                        "type": "string"
+                    },
+                    "TargetDatabase": {
+                        "defaultValue": "@pipeline().globalParameters.aubi_sqldbname",
+                        "type": "string"
+                    },
+                    "TargetSchemaName": {
+                        "defaultValue": "costmanagement",
+                        "type": "string"
+                    },
+                    "TargetSqlServerName": {
+                        "defaultValue": "@pipeline().globalParameters.aubi_sqlservername",
+                        "type": "string"
+                    },
+                    "UsageDownload_StorageAccountName": {
+                        "defaultValue": "@pipeline().globalParameters.aubi_StorageAccountName",
+                        "type": "string"
+                    },
+                    "UsageDownload_StorageBlobContainer": {
+                        "defaultValue": "aubi",
+                        "type": "string"
+                    },
+                    "UsageDownload_StorageBlobDirectory": {
+                        "defaultValue": "download/usage/scheduled_exports",
+                        "type": "string"
+                    }
+                },
+                "policy": {
+                    "cancelAfter": {},
+                    "elapsedTimeMetric": {}
+                },
+                "variables": {
+                    "EmptyArray": {
+                        "type": "Array"
+                    }
+                }
+            },
+            "type": "Microsoft.DataFactory/factories/pipelines"
+        },
+        {
+            "apiVersion": "2018-06-01",
+            "dependsOn": [],
+            "name": "[concat(parameters('factoryName'), '/aubiAzureStorage')]",
+            "properties": {
+                "annotations": [],
+                "description": "Data retrieved from the Billing APIs will be written to this Azure Storage account",
+                "parameters": {
+                    "StorageAccountName": {
+                        "defaultValue": "cfmdefaultsa",
+                        "type": "String"
+                    }
+                },
+                "type": "AzureBlobStorage",
+                "typeProperties": {
+                    "serviceEndpoint": "[parameters('aubiAzureStorage_properties_typeProperties_serviceEndpoint')]"
+                }
+            },
+            "type": "Microsoft.DataFactory/factories/linkedServices"
+        },
+        {
+            "apiVersion": "2018-06-01",
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/AubiSQLDatabase')]"
+            ],
+            "name": "[concat(parameters('factoryName'), '/aubiSQLTableDataset')]",
+            "properties": {
+                "annotations": [],
+                "folder": {
+                    "name": "ProcessUsageData"
+                },
+                "linkedServiceName": {
+                    "parameters": {
+                        "databasename": {
+                            "type": "Expression",
+                            "value": "@dataset().sqldbname"
+                        },
+                        "servername": {
+                            "type": "Expression",
+                            "value": "@dataset().sqlservername"
+                        }
+                    },
+                    "referenceName": "AubiSQLDatabase",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "schemaname": {
+                        "defaultValue": "aubi",
+                        "type": "string"
+                    },
+                    "sqldbname": {
+                        "defaultValue": "aubisqldb",
+                        "type": "string"
+                    },
+                    "sqlservername": {
+                        "defaultValue": "aubisqlserver",
+                        "type": "string"
+                    },
+                    "tablename": {
+                        "defaultValue": "AzureUsageData",
+                        "type": "string"
+                    }
+                },
+                "schema": [],
+                "type": "AzureSqlTable",
+                "typeProperties": {
+                    "schema": {
+                        "type": "Expression",
+                        "value": "@dataset().schemaname"
+                    },
+                    "table": {
+                        "type": "Expression",
+                        "value": "@dataset().tablename"
+                    }
+                }
+            },
+            "type": "Microsoft.DataFactory/factories/datasets"
+        }
+    ],
+    "variables": {
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+    }
+}

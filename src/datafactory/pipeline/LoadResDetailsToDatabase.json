@@ -1,0 +1,285 @@
+{
+	"name": "LoadResDetailsToDatabase",
+	"properties": {
+		"activities": [
+			{
+				"name": "RefreshReservationDetailsSQLTable",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true,
+							"wildcardFolderPath": {
+								"value": "@pipeline().parameters.costopt_StorageDirectoryName",
+								"type": "Expression"
+							},
+							"wildcardFileName": "*",
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"preCopyScript": "delete costmanagement.ReservationDetails",
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "InstanceFlexibilityGroup",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "InstanceFlexibilityGroup",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "InstanceFlexibilityRatio",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "InstanceFlexibilityRatio",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "InstanceId",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "InstanceId",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Kind",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Kind",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ReservationId",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "ReservationId",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ReservationOrderId",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "ReservationOrderId",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ReservedHours",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "ReservedHours",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "SkuName",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "SkuName",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "TotalReservedQuantity",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "TotalReservedQuantity",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "UsageDate",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "UsageDate",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "UsedHours",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "UsedHours",
+									"type": "String",
+									"physicalType": "String"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": false,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "CSVFileDataset",
+						"type": "DatasetReference",
+						"parameters": {
+							"StorageAccount": {
+								"value": "@pipeline().globalParameters.costopt_StorageAccountName",
+								"type": "Expression"
+							},
+							"Container": {
+								"value": "@pipeline().globalParameters.costopt_Container",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@pipeline().parameters.costopt_StorageDirectoryName",
+								"type": "Expression"
+							},
+							"File": "NOTUSED"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "costoptSQLTableDataset",
+						"type": "DatasetReference",
+						"parameters": {
+							"tablename": {
+								"value": "@pipeline().parameters.ResDetailsTargetTable",
+								"type": "Expression"
+							},
+							"schemaname": {
+								"value": "@pipeline().parameters.ResDetailsTargetSchema",
+								"type": "Expression"
+							},
+							"sqlservername": {
+								"value": "@pipeline().globalParameters.costopt_sqlservername",
+								"type": "Expression"
+							},
+							"sqldbname": {
+								"value": "@pipeline().globalParameters.costopt_sqldbname",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "ReOrganizeIndex",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "RefreshReservationDetailsSQLTable",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[costmanagement].[ReorganiseReservationDetailsIndex]"
+				},
+				"linkedServiceName": {
+					"referenceName": "AubiSQLDatabase",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"databasename": {
+							"value": "@pipeline().globalParameters.costopt_sqldbname",
+							"type": "Expression"
+						},
+						"servername": {
+							"value": "@pipeline().globalParameters.costopt_sqlservername",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"costopt_StorageDirectoryName": {
+				"type": "string"
+			},
+			"ResDetailsTargetTable": {
+				"type": "string",
+				"defaultValue": "ReservationDetails"
+			},
+			"ResDetailsTargetSchema": {
+				"type": "string",
+				"defaultValue": "costmanagement"
+			}
+		},
+		"folder": {
+			"name": "ReservationDetails"
+		},
+		"annotations": []
+	}
+}

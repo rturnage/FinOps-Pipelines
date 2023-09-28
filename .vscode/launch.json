@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": ["--month", "202304", "--cost_type", "amortized"]
+        },
+        {
+            "name": "Python: Format Json File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--file",
+                "${workspaceFolder}/pipeline/azure_data_factory_prod/ARMTemplateParametersForFactory.json",
+                "--parameters",
+                "${workspaceFolder}/pipeline/azure_data_factory_prod/ARMTemplateForFactory.json.found"
+            ]
+        }
+    ]
+}

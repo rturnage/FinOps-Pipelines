@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+###################################################################
+# Build a changelog for Data Patches
+###################################################################
+
+# Stop on errors
+set -e
+
+cd "$(dirname "$0")/.."
+
+file_name="$1"
+
+# Get latest tag
+previous=$(git tag -l --sort=-creatordate | head -n 1)
+
+# Just check sql directory for files changes since $previous version
+changed=$(git log --name-only --pretty=oneline --full-index "${previous}"..HEAD | grep 'sql.*sql$' | sort | uniq)
+
+echo "# Dropped Tables:" > "${file_name}"
+while read -r filename; do
+    if [[ -f "$filename" ]]; then
+        grep "DROP TABLE" "$filename" | cat | sed --regexp-extended 's/DROP TABLE (IF EXISTS)?(\s+)?(\w*)/* \3/' | sort | uniq
+        grep "DROP TABLE" "$filename" | cat | sed --regexp-extended 's/DROP TABLE (IF EXISTS)?(\s+)?(\w*)/* \3/' | sort | uniq >> "${file_name}"
+    fi
+done < <(echo "$changed")

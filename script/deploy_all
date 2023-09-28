@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+###################################################################
+# Deploy all customizations to the Default CFM Pipeline deployment.
+###################################################################
+
+# Stop on errors
+set -e
+
+cd "$(dirname "$0")/.."
+
+echo "Installing patches..."
+for f in script/patch/patch_*; do
+  bash "$f"
+done
+
+echo "Finished deploy_all"

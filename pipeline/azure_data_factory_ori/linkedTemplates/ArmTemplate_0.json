@@ -1,0 +1,2477 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "type": "string",
+            "metadata": "Data Factory name",
+            "defaultValue": "adf-cloud-financial-management"
+        },
+        "AubiSQLDatabase_connectionString": {
+            "type": "secureString",
+            "metadata": "Secure string for 'connectionString' of 'AubiSQLDatabase'",
+            "defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=@{linkedService().servername}.database.windows.net;Initial Catalog=@{linkedService().databasename}"
+        },
+        "dataFactory_factoryName": {
+            "type": "string"
+        },
+        "dataFactory_properties_globalParameters_ResRecLookbackPeriodsArray_value": {
+            "type": "array",
+            "defaultValue": [
+                "Last7Days",
+                "Last30Days",
+                "Last60Days"
+            ]
+        },
+        "dataFactory_properties_globalParameters_ResRecServicesArray_value": {
+            "type": "array",
+            "defaultValue": [
+                "VirtualMachines",
+                "SQLDatabases",
+                "PostgreSQL",
+                "ManagedDisk",
+                "MySQL",
+                "RedHat",
+                "MariaDB",
+                "RedisCache",
+                "CosmosDB",
+                "SqlDataWarehouse",
+                "SUSELinux",
+                "AppService",
+                "BlockBlob",
+                "AzureDataExplorer",
+                "VMwareCloudSimple"
+            ]
+        },
+        "dataFactory_properties_globalParameters_costopt_sqlservername_value": {
+            "type": "string",
+            "defaultValue": "cfmsqlserver"
+        },
+        "dataFactory_properties_globalParameters_costopt_sqldbname_value": {
+            "type": "string",
+            "defaultValue": "costoptsqldb"
+        },
+        "dataFactory_properties_globalParameters_costopt_KeyVaultName_value": {
+            "type": "string",
+            "defaultValue": "costoptkeyvault0006"
+        },
+        "dataFactory_properties_globalParameters_costopt_tenantid_secretname_value": {
+            "type": "string",
+            "defaultValue": "costopt-tenantid"
+        },
+        "dataFactory_properties_globalParameters_costopt_clientsecret_secretname_value": {
+            "type": "string",
+            "defaultValue": "costopt-serviceprincipalsecret"
+        },
+        "dataFactory_properties_globalParameters_costopt_clientId_secretname_value": {
+            "type": "string",
+            "defaultValue": "costopt-serviceprincipalclientid"
+        },
+        "dataFactory_properties_globalParameters_costopt_StorageAccountName_value": {
+            "type": "string",
+            "defaultValue": "costoptstorage"
+        },
+        "dataFactory_properties_globalParameters_costopt_ResourceGroupName_value": {
+            "type": "string",
+            "defaultValue": "rg-costopt"
+        },
+        "dataFactory_properties_globalParameters_costopt_EnrollmentNumber_value": {
+            "type": "string",
+            "defaultValue": "123456"
+        },
+        "dataFactory_properties_globalParameters_costopt_StorageAccountSubscriptionId_value": {
+            "type": "string",
+            "defaultValue": "SubId"
+        },
+        "dataFactory_properties_globalParameters_costopt_PriceSheetSubscriptionId_value": {
+            "type": "string",
+            "defaultValue": "SubId"
+        },
+        "dataFactory_properties_globalParameters_costopt_Container_value": {
+            "type": "string",
+            "defaultValue": "costopt"
+        },
+        "dataFactory_location": {
+            "type": "string",
+            "defaultValue": "westeurope"
+        },
+        "dataFactory_identity_type": {
+            "type": "string",
+            "defaultValue": "SystemAssigned"
+        },
+        "HTTPFile_properties_typeProperties_url": {
+            "type": "string",
+            "defaultValue": "@{linkedService().FileURL}"
+        },
+        "aubiAzureStorage_properties_typeProperties_serviceEndpoint": {
+            "type": "string",
+            "defaultValue": "@concat('https://',linkedService().StorageAccountName,'.blob.core.windows.net')"
+        },
+        "aubiKeyVault_properties_typeProperties_baseUrl": {
+            "type": "string",
+            "defaultValue": "https://@{linkedService().KeyVaultName}.vault.azure.net/"
+        },
+        "AzureManagementAPI_properties_typeProperties_url": {
+            "type": "string",
+            "defaultValue": "https://management.azure.com"
+        },
+        "AzureManagementAPI_properties_typeProperties_servicePrincipalId": {
+            "type": "string",
+            "defaultValue": "@{linkedService().servicePrincipalId}"
+        },
+        "AzureManagementAPI_properties_typeProperties_tenant": {
+            "type": "string",
+            "defaultValue": "@{linkedService().tenantId}"
+        },
+        "AzureManagementAPI_properties_typeProperties_aadResourceId": {
+            "type": "string",
+            "defaultValue": "https://management.azure.com/"
+        }
+    },
+    "variables": {
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+    },
+    "resources": [
+        {
+            "name": "[parameters('dataFactory_factoryName')]",
+            "type": "Microsoft.DataFactory/factories",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "globalParameters": {
+                    "ResRecLookbackPeriodsArray": {
+                        "type": "array",
+                        "value": "[parameters('dataFactory_properties_globalParameters_ResRecLookbackPeriodsArray_value')]"
+                    },
+                    "ResRecServicesArray": {
+                        "type": "array",
+                        "value": "[parameters('dataFactory_properties_globalParameters_ResRecServicesArray_value')]"
+                    },
+                    "costopt_sqlservername": {
+                        "type": "string",
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_sqlservername_value')]"
+                    },
+                    "costopt_sqldbname": {
+                        "type": "string",
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_sqldbname_value')]"
+                    },
+                    "costopt_KeyVaultName": {
+                        "type": "string",
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_KeyVaultName_value')]"
+                    },
+                    "costopt_tenantid_secretname": {
+                        "type": "string",
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_tenantid_secretname_value')]"
+                    },
+                    "costopt_clientsecret_secretname": {
+                        "type": "string",
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_clientsecret_secretname_value')]"
+                    },
+                    "costopt_clientId_secretname": {
+                        "type": "string",
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_clientId_secretname_value')]"
+                    },
+                    "costopt_StorageAccountName": {
+                        "type": "string",
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_StorageAccountName_value')]"
+                    },
+                    "costopt_ResourceGroupName": {
+                        "type": "string",
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_ResourceGroupName_value')]"
+                    },
+                    "costopt_EnrollmentNumber": {
+                        "type": "string",
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_EnrollmentNumber_value')]"
+                    },
+                    "costopt_StorageAccountSubscriptionId": {
+                        "type": "string",
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_StorageAccountSubscriptionId_value')]"
+                    },
+                    "costopt_PriceSheetSubscriptionId": {
+                        "type": "string",
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_PriceSheetSubscriptionId_value')]"
+                    },
+                    "costopt_Container": {
+                        "type": "string",
+                        "value": "[parameters('dataFactory_properties_globalParameters_costopt_Container_value')]"
+                    }
+                }
+            },
+            "dependsOn": [],
+            "location": "[parameters('dataFactory_location')]",
+            "identity": {
+                "type": "[parameters('dataFactory_identity_type')]"
+            }
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/AubiSQLDatabase')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "Billing datasets are written to this Azure SQL Database",
+                "parameters": {
+                    "databasename": {
+                        "type": "string",
+                        "defaultValue": "aubisqldb"
+                    },
+                    "servername": {
+                        "type": "string",
+                        "defaultValue": "aubisqlserver"
+                    }
+                },
+                "annotations": [],
+                "type": "AzureSqlDatabase",
+                "typeProperties": {
+                    "connectionString": "[parameters('AubiSQLDatabase_connectionString')]"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/HTTPFile')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "Linked Service for a HTTP location where authentication is not needed or is supplied in the URL",
+                "parameters": {
+                    "FileURL": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "HttpServer",
+                "typeProperties": {
+                    "url": "[parameters('HTTPFile_properties_typeProperties_url')]",
+                    "enableServerCertificateValidation": true,
+                    "authenticationType": "Anonymous"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/aubiAzureStorage')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "Data retrieved from the Billing APIs will be written to this Azure Storage account",
+                "parameters": {
+                    "StorageAccountName": {
+                        "type": "String"
+                    }
+                },
+                "annotations": [],
+                "type": "AzureBlobStorage",
+                "typeProperties": {
+                    "serviceEndpoint": "[parameters('aubiAzureStorage_properties_typeProperties_serviceEndpoint')]"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/aubiKeyVault')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "Key Vault containing secrets required to authenticate to the billing apis",
+                "parameters": {
+                    "KeyVaultName": {
+                        "type": "string",
+                        "defaultValue": "<KEYVAULTNAME>"
+                    }
+                },
+                "annotations": [],
+                "type": "AzureKeyVault",
+                "typeProperties": {
+                    "baseUrl": "[parameters('aubiKeyVault_properties_typeProperties_baseUrl')]"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DeleteNamedExport')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "GetClientId",
+                        "description": "Retrieve ClientId from Keyvault",
+                        "type": "WebActivity",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.00:05:00",
+                            "retry": 2,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": true,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "url": {
+                                "value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_clientId_secretname}?api-version=7.0",
+                                "type": "Expression"
+                            },
+                            "method": "GET",
+                            "headers": {},
+                            "authentication": {
+                                "type": "MSI",
+                                "resource": "https://vault.azure.net"
+                            }
+                        }
+                    },
+                    {
+                        "name": "GetTenantId",
+                        "description": "Retrieve TenantId from Keyvault",
+                        "type": "WebActivity",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.00:05:00",
+                            "retry": 2,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": true,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "url": {
+                                "value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_tenantid_secretname}?api-version=7.0",
+                                "type": "Expression"
+                            },
+                            "method": "GET",
+                            "headers": {},
+                            "authentication": {
+                                "type": "MSI",
+                                "resource": "https://vault.azure.net"
+                            }
+                        }
+                    },
+                    {
+                        "name": "ForEach1",
+                        "type": "ForEach",
+                        "dependsOn": [
+                            {
+                                "activity": "GetClientId",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            },
+                            {
+                                "activity": "GetTenantId",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "items": {
+                                "value": "@pipeline().parameters.exportNameArray",
+                                "type": "Expression"
+                            },
+                            "activities": [
+                                {
+                                    "name": "DeleteNamedExport_Pre",
+                                    "description": "Make a call to the ExportAPI to delete the named export",
+                                    "type": "WebActivity",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.00:02:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "url": {
+                                            "value": "@concat('https://management.azure.com/', pipeline().parameters.scope, '/providers/Microsoft.CostManagement/exports/',item(),'?api-version=',pipeline().parameters.CostManagementApiVersion)",
+                                            "type": "Expression"
+                                        },
+                                        "method": "DELETE",
+                                        "headers": {},
+                                        "body": "x",
+                                        "authentication": {
+                                            "type": "ServicePrincipal",
+                                            "userTenant": {
+                                                "value": "@activity('GetTenantId').output.value",
+                                                "type": "Expression"
+                                            },
+                                            "username": {
+                                                "value": "@activity('GetClientId').output.value",
+                                                "type": "Expression"
+                                            },
+                                            "resource": "https://management.azure.com",
+                                            "password": {
+                                                "type": "AzureKeyVaultSecret",
+                                                "store": {
+                                                    "referenceName": "aubiKeyVault",
+                                                    "type": "LinkedServiceReference",
+                                                    "parameters": {
+                                                        "KeyVaultName": {
+                                                            "value": "@pipeline().globalParameters.costopt_KeyVaultName",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "secretName": {
+                                                    "value": "@pipeline().globalParameters.costopt_clientsecret_secretname",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {},
+                    "cancelAfter": {}
+                },
+                "parameters": {
+                    "exportNameArray": {
+                        "type": "array",
+                        "defaultValue": [
+                            "<ExportName1>",
+                            "<ExportName2>"
+                        ]
+                    },
+                    "scope": {
+                        "type": "string",
+                        "defaultValue": "providers/Microsoft.Billing/billingAccounts/<BillingAccountNum>"
+                    },
+                    "CostManagementApiVersion": {
+                        "type": "string",
+                        "defaultValue": "2021-01-01"
+                    }
+                },
+                "folder": {
+                    "name": "UsageData"
+                },
+                "annotations": [],
+                "lastPublishTime": "2021-09-23T00:35:31Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/aubiKeyVault')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ListExports')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "ListExports",
+                        "type": "WebActivity",
+                        "dependsOn": [
+                            {
+                                "activity": "GetTenantId",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            },
+                            {
+                                "activity": "GetClientId",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "url": {
+                                "value": "https://management.azure.com/@{pipeline().parameters.scope}/providers/Microsoft.CostManagement/exports?api-version=@{pipeline().parameters.CostManagementAPIVersion}",
+                                "type": "Expression"
+                            },
+                            "method": "GET",
+                            "headers": {},
+                            "authentication": {
+                                "type": "ServicePrincipal",
+                                "userTenant": {
+                                    "value": "@activity('GetTenantId').output.value",
+                                    "type": "Expression"
+                                },
+                                "username": {
+                                    "value": "@activity('GetClientId').output.value",
+                                    "type": "Expression"
+                                },
+                                "resource": "https://management.azure.com",
+                                "password": {
+                                    "type": "AzureKeyVaultSecret",
+                                    "store": {
+                                        "referenceName": "aubiKeyVault",
+                                        "type": "LinkedServiceReference",
+                                        "parameters": {
+                                            "KeyVaultName": {
+                                                "value": "@pipeline().globalParameters.costopt_KeyVaultName",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    },
+                                    "secretName": {
+                                        "value": "@pipeline().globalParameters.costopt_clientsecret_secretname",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "name": "GetClientId",
+                        "description": "Retrieve ClientId from Keyvault",
+                        "type": "WebActivity",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.00:05:00",
+                            "retry": 2,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": true,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "url": {
+                                "value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_clientId_secretname}?api-version=7.0",
+                                "type": "Expression"
+                            },
+                            "method": "GET",
+                            "headers": {},
+                            "authentication": {
+                                "type": "MSI",
+                                "resource": "https://vault.azure.net"
+                            }
+                        }
+                    },
+                    {
+                        "name": "GetTenantId",
+                        "description": "Retrieve TenantId from Keyvault",
+                        "type": "WebActivity",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.00:05:00",
+                            "retry": 2,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": true,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "url": {
+                                "value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_tenantid_secretname}?api-version=7.0",
+                                "type": "Expression"
+                            },
+                            "method": "GET",
+                            "headers": {},
+                            "authentication": {
+                                "type": "MSI",
+                                "resource": "https://vault.azure.net"
+                            }
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {},
+                    "cancelAfter": {}
+                },
+                "parameters": {
+                    "scope": {
+                        "type": "string",
+                        "defaultValue": "providers/Microsoft.Billing/billingAccounts/<BillingAccountNum>"
+                    },
+                    "CostManagementAPIVersion": {
+                        "type": "string",
+                        "defaultValue": "2020-06-01"
+                    }
+                },
+                "folder": {
+                    "name": "UsageData"
+                },
+                "annotations": [],
+                "lastPublishTime": "2021-09-23T00:31:33Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/aubiKeyVault')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/RunNamedExport')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "GetClientId",
+                        "description": "Retrieve ClientId from Keyvault",
+                        "type": "WebActivity",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.00:05:00",
+                            "retry": 2,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": true,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "url": {
+                                "value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_clientId_secretname}?api-version=7.0",
+                                "type": "Expression"
+                            },
+                            "method": "GET",
+                            "headers": {},
+                            "authentication": {
+                                "type": "MSI",
+                                "resource": "https://vault.azure.net"
+                            }
+                        }
+                    },
+                    {
+                        "name": "GetTenantId",
+                        "description": "Retrieve TenantId from Keyvault",
+                        "type": "WebActivity",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.00:05:00",
+                            "retry": 2,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": true,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "url": {
+                                "value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_tenantid_secretname}?api-version=7.0",
+                                "type": "Expression"
+                            },
+                            "method": "GET",
+                            "headers": {},
+                            "authentication": {
+                                "type": "MSI",
+                                "resource": "https://vault.azure.net"
+                            }
+                        }
+                    },
+                    {
+                        "name": "ForEach1",
+                        "type": "ForEach",
+                        "dependsOn": [
+                            {
+                                "activity": "GetClientId",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            },
+                            {
+                                "activity": "GetTenantId",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "items": {
+                                "value": "@pipeline().parameters.exportNameArray",
+                                "type": "Expression"
+                            },
+                            "activities": [
+                                {
+                                    "name": "RunNamedExport_Pre",
+                                    "description": "Make a call to the ExportAPI to delete the named export",
+                                    "type": "WebActivity",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.00:02:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "url": {
+                                            "value": "https://management.azure.com/@{pipeline().parameters.scope}/providers/Microsoft.CostManagement/exports/@{item()}/run?api-version=@{pipeline().parameters.CostManagementApiVersion}",
+                                            "type": "Expression"
+                                        },
+                                        "method": "POST",
+                                        "headers": {},
+                                        "body": "x",
+                                        "authentication": {
+                                            "type": "ServicePrincipal",
+                                            "userTenant": {
+                                                "value": "@activity('GetTenantId').output.value",
+                                                "type": "Expression"
+                                            },
+                                            "username": {
+                                                "value": "@activity('GetClientId').output.value",
+                                                "type": "Expression"
+                                            },
+                                            "resource": "https://management.azure.com",
+                                            "password": {
+                                                "type": "AzureKeyVaultSecret",
+                                                "store": {
+                                                    "referenceName": "aubiKeyVault",
+                                                    "type": "LinkedServiceReference",
+                                                    "parameters": {
+                                                        "KeyVaultName": {
+                                                            "value": "@pipeline().globalParameters.costopt_KeyVaultName",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "secretName": {
+                                                    "value": "@pipeline().globalParameters.costopt_clientsecret_secretname",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {},
+                    "cancelAfter": {}
+                },
+                "parameters": {
+                    "exportNameArray": {
+                        "type": "array",
+                        "defaultValue": [
+                            "msftCostManagementExportAmortizedCost",
+                            "msftCostManagementExportActualCost"
+                        ]
+                    },
+                    "scope": {
+                        "type": "string",
+                        "defaultValue": "providers/Microsoft.Billing/billingAccounts/57067410"
+                    },
+                    "CostManagementApiVersion": {
+                        "type": "string",
+                        "defaultValue": "2021-01-01"
+                    }
+                },
+                "folder": {
+                    "name": "UsageData"
+                },
+                "annotations": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/aubiKeyVault')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/AubiBinaryFile')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "aubiAzureStorage",
+                    "type": "LinkedServiceReference",
+                    "parameters": {
+                        "StorageAccountName": {
+                            "value": "@dataset().StorageAccountName",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "parameters": {
+                    "StorageAccountName": {
+                        "type": "string"
+                    },
+                    "Container": {
+                        "type": "string"
+                    },
+                    "Directory": {
+                        "type": "string"
+                    },
+                    "FIleName": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Binary",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobStorageLocation",
+                        "fileName": {
+                            "value": "@dataset().FIleName",
+                            "type": "Expression"
+                        },
+                        "folderPath": {
+                            "value": "@dataset().Directory",
+                            "type": "Expression"
+                        },
+                        "container": {
+                            "value": "@dataset().Container",
+                            "type": "Expression"
+                        }
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/aubiAzureStorage')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/CSVFileDataset')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "Generic CSV Dataset used in a number of aubi pipelines.\n",
+                "linkedServiceName": {
+                    "referenceName": "aubiAzureStorage",
+                    "type": "LinkedServiceReference",
+                    "parameters": {
+                        "StorageAccountName": {
+                            "value": "@dataset().StorageAccount",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "parameters": {
+                    "StorageAccount": {
+                        "type": "string"
+                    },
+                    "Container": {
+                        "type": "string"
+                    },
+                    "Directory": {
+                        "type": "string"
+                    },
+                    "File": {
+                        "type": "string"
+                    }
+                },
+                "folder": {
+                    "name": "ProcessUsageData"
+                },
+                "annotations": [],
+                "type": "DelimitedText",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobStorageLocation",
+                        "fileName": {
+                            "value": "@dataset().File",
+                            "type": "Expression"
+                        },
+                        "folderPath": {
+                            "value": "@dataset().Directory",
+                            "type": "Expression"
+                        },
+                        "container": {
+                            "value": "@dataset().Container",
+                            "type": "Expression"
+                        }
+                    },
+                    "columnDelimiter": ",",
+                    "escapeChar": "\"",
+                    "firstRowAsHeader": true,
+                    "quoteChar": "\""
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/aubiAzureStorage')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/HTTPFile')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "HTTPFile",
+                    "type": "LinkedServiceReference",
+                    "parameters": {
+                        "FileURL": {
+                            "value": "@dataset().FileURL",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "parameters": {
+                    "FileURL": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Binary",
+                "typeProperties": {
+                    "location": {
+                        "type": "HttpServerLocation"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/HTTPFile')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/JsonDataset')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "aubiAzureStorage",
+                    "type": "LinkedServiceReference",
+                    "parameters": {
+                        "StorageAccountName": {
+                            "value": "@dataset().StorageAccountName",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "parameters": {
+                    "StorageAccountName": {
+                        "type": "string"
+                    },
+                    "Container": {
+                        "type": "string"
+                    },
+                    "Directory": {
+                        "type": "string"
+                    },
+                    "FileName": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Json",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobStorageLocation",
+                        "fileName": {
+                            "value": "@dataset().FileName",
+                            "type": "Expression"
+                        },
+                        "folderPath": {
+                            "value": "@dataset().Directory",
+                            "type": "Expression"
+                        },
+                        "container": {
+                            "value": "@dataset().Container",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "schema": {}
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/aubiAzureStorage')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/RIRecommendationsJson')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "aubiAzureStorage",
+                    "type": "LinkedServiceReference",
+                    "parameters": {
+                        "StorageAccountName": {
+                            "value": "@dataset().StorageAccountName",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "parameters": {
+                    "Container": {
+                        "type": "string"
+                    },
+                    "StorageAccountName": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Json",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobStorageLocation",
+                        "container": {
+                            "value": "@dataset().Container",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "schema": {}
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/aubiAzureStorage')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/costoptSQLTableDataset')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "AubiSQLDatabase",
+                    "type": "LinkedServiceReference",
+                    "parameters": {
+                        "databasename": {
+                            "value": "@dataset().sqldbname",
+                            "type": "Expression"
+                        },
+                        "servername": {
+                            "value": "@dataset().sqlservername",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "parameters": {
+                    "tablename": {
+                        "type": "string"
+                    },
+                    "schemaname": {
+                        "type": "string"
+                    },
+                    "sqlservername": {
+                        "type": "string"
+                    },
+                    "sqldbname": {
+                        "type": "string"
+                    }
+                },
+                "folder": {
+                    "name": "ProcessUsageData"
+                },
+                "annotations": [],
+                "type": "AzureSqlTable",
+                "schema": [],
+                "typeProperties": {
+                    "schema": {
+                        "value": "@dataset().schemaname",
+                        "type": "Expression"
+                    },
+                    "table": {
+                        "value": "@dataset().tablename",
+                        "type": "Expression"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/AubiSQLDatabase')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/AzureManagementAPI')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "parameters": {
+                    "servicePrincipalId": {
+                        "type": "string"
+                    },
+                    "servicePrincipalSecretKeyName": {
+                        "type": "string",
+                        "defaultValue": "aubi-serviceprincipalsecret"
+                    },
+                    "tenantId": {
+                        "type": "string"
+                    },
+                    "KeyVaultName": {
+                        "type": "string",
+                        "defaultValue": "<KeyVaultName>"
+                    }
+                },
+                "annotations": [],
+                "type": "RestService",
+                "typeProperties": {
+                    "url": "[parameters('AzureManagementAPI_properties_typeProperties_url')]",
+                    "enableServerCertificateValidation": true,
+                    "authenticationType": "AadServicePrincipal",
+                    "servicePrincipalId": "[parameters('AzureManagementAPI_properties_typeProperties_servicePrincipalId')]",
+                    "servicePrincipalKey": {
+                        "type": "AzureKeyVaultSecret",
+                        "store": {
+                            "referenceName": "aubiKeyVault",
+                            "type": "LinkedServiceReference",
+                            "parameters": {
+                                "KeyVaultName": {
+                                    "value": "@linkedService().KeyVaultName",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        "secretName": {
+                            "value": "@{linkedService().servicePrincipalSecretKeyName}",
+                            "type": "Expression"
+                        }
+                    },
+                    "tenant": "[parameters('AzureManagementAPI_properties_typeProperties_tenant')]",
+                    "aadResourceId": "[parameters('AzureManagementAPI_properties_typeProperties_aadResourceId')]"
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/aubiKeyVault')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/GetISFRatioDataPipeline')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "CopyISFRatioData",
+                        "type": "Copy",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "BinarySource",
+                                "storeSettings": {
+                                    "type": "HttpReadSettings",
+                                    "requestMethod": "GET"
+                                },
+                                "formatSettings": {
+                                    "type": "BinaryReadSettings"
+                                }
+                            },
+                            "sink": {
+                                "type": "BinarySink",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageWriteSettings"
+                                }
+                            },
+                            "enableStaging": false
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "HTTPFile",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "FileURL": {
+                                        "value": "@pipeline().parameters.ISFFileURL",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "AubiBinaryFile",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "StorageAccountName": {
+                                        "value": "@pipeline().globalParameters.costopt_StorageAccountName",
+                                        "type": "Expression"
+                                    },
+                                    "Container": {
+                                        "value": "@pipeline().globalParameters.costopt_Container",
+                                        "type": "Expression"
+                                    },
+                                    "Directory": {
+                                        "value": "@pipeline().parameters.Download_StorageBlobDirectory",
+                                        "type": "Expression"
+                                    },
+                                    "FIleName": {
+                                        "value": "@pipeline().parameters.DownloadTargetFilename",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {},
+                    "cancelAfter": {}
+                },
+                "parameters": {
+                    "Download_StorageBlobDirectory": {
+                        "type": "string",
+                        "defaultValue": "download/isfratio"
+                    },
+                    "DownloadTargetFilename": {
+                        "type": "string",
+                        "defaultValue": "isfratio.csv"
+                    },
+                    "ISFFileURL": {
+                        "type": "string",
+                        "defaultValue": "https://isfratio.blob.core.windows.net/isfratio/ISFRatio.csv"
+                    }
+                },
+                "folder": {
+                    "name": "ISFRatio"
+                },
+                "annotations": [],
+                "lastPublishTime": "2021-09-21T22:04:41Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/HTTPFile')]",
+                "[concat(variables('factoryId'), '/datasets/AubiBinaryFile')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/GetReservationDetailsReportAsynch')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "GetClientId",
+                        "description": "Retrieve ClientId from Keyvault",
+                        "type": "WebActivity",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.00:05:00",
+                            "retry": 2,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": true,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "url": {
+                                "value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_clientId_secretname}?api-version=7.0",
+                                "type": "Expression"
+                            },
+                            "method": "GET",
+                            "headers": {},
+                            "authentication": {
+                                "type": "MSI",
+                                "resource": "https://vault.azure.net"
+                            }
+                        }
+                    },
+                    {
+                        "name": "GetTenantId",
+                        "description": "Retrieve TenantId from Keyvault",
+                        "type": "WebActivity",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.00:05:00",
+                            "retry": 2,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": true,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "url": {
+                                "value": "https://@{pipeline().globalParameters.costopt_KeyVaultName}.vault.azure.net/secrets/@{pipeline().globalParameters.costopt_tenantid_secretname}?api-version=7.0",
+                                "type": "Expression"
+                            },
+                            "method": "GET",
+                            "headers": {},
+                            "authentication": {
+                                "type": "MSI",
+                                "resource": "https://vault.azure.net"
+                            }
+                        }
+                    },
+                    {
+                        "name": "PostReservationDetailsReportRequestAsynch",
+                        "type": "WebActivity",
+                        "dependsOn": [
+                            {
+                                "activity": "GetClientId",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            },
+                            {
+                                "activity": "GetTenantId",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "url": {
+                                "value": "https://management.azure.com/@{pipeline().parameters.scope}/providers/Microsoft.CostManagement/generateReservationDetailsReport?api-version=@{pipeline().parameters.CostManagementAPIVersion}&startDate=@{pipeline().parameters.StartDate}&endDate=@{pipeline().parameters.EndDate}",
+                                "type": "Expression"
+                            },
+                            "method": "POST",
+                            "headers": {},
+                            "body": "x",
+                            "authentication": {
+                                "type": "ServicePrincipal",
+                                "userTenant": {
+                                    "value": "@{activity('GetTenantId').output.value}",
+                                    "type": "Expression"
+                                },
+                                "username": {
+                                    "value": "@{activity('GetClientId').output.value}",
+                                    "type": "Expression"
+                                },
+                                "resource": {
+                                    "value": "https://management.azure.com/",
+                                    "type": "Expression"
+                                },
+                                "password": {
+                                    "type": "AzureKeyVaultSecret",
+                                    "store": {
+                                        "referenceName": "aubiKeyVault",
+                                        "type": "LinkedServiceReference",
+                                        "parameters": {
+                                            "KeyVaultName": {
+                                                "value": "@pipeline().globalParameters.costopt_KeyVaultName",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    },
+                                    "secretName": {
+                                        "value": "@pipeline().globalParameters.costopt_clientsecret_secretname",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "name": "DownloadResTransReport",
+                        "type": "Copy",
+                        "dependsOn": [
+                            {
+                                "activity": "PostReservationDetailsReportRequestAsynch",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "BinarySource",
+                                "storeSettings": {
+                                    "type": "HttpReadSettings",
+                                    "requestMethod": "GET"
+                                },
+                                "formatSettings": {
+                                    "type": "BinaryReadSettings"
+                                }
+                            },
+                            "sink": {
+                                "type": "BinarySink",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageWriteSettings"
+                                }
+                            },
+                            "enableStaging": false
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "HTTPFile",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "FileURL": {
+                                        "value": "@activity('PostReservationDetailsReportRequestAsynch').output.properties.reportUrl",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "AubiBinaryFile",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "StorageAccountName": {
+                                        "value": "@pipeline().globalParameters.costopt_StorageAccountName",
+                                        "type": "Expression"
+                                    },
+                                    "Container": {
+                                        "value": "@pipeline().globalParameters.costopt_Container",
+                                        "type": "Expression"
+                                    },
+                                    "Directory": {
+                                        "value": "@pipeline().parameters.Download_StorageBlobDirectory",
+                                        "type": "Expression"
+                                    },
+                                    "FIleName": {
+                                        "value": "@pipeline().parameters.DownloadTargetFilename",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {},
+                    "cancelAfter": {}
+                },
+                "parameters": {
+                    "Download_StorageBlobDirectory": {
+                        "type": "string",
+                        "defaultValue": "download/resdetails"
+                    },
+                    "DownloadTargetFilename": {
+                        "type": "string",
+                        "defaultValue": "resdetails.csv"
+                    },
+                    "scope": {
+                        "type": "string",
+                        "defaultValue": "providers/Microsoft.Billing/billingAccounts/<BillingAccountNum>"
+                    },
+                    "CostManagementAPIVersion": {
+                        "type": "string",
+                        "defaultValue": "2019-11-01"
+                    },
+                    "StartDate": {
+                        "type": "string",
+                        "defaultValue": "2021-08-01"
+                    },
+                    "EndDate": {
+                        "type": "string",
+                        "defaultValue": "2021-08-31"
+                    }
+                },
+                "variables": {
+                    "ReservationDetailsReportLocation": {
+                        "type": "String"
+                    }
+                },
+                "folder": {
+                    "name": "ReservationDetails"
+                },
+                "annotations": [],
+                "lastPublishTime": "2021-09-22T20:09:04Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/HTTPFile')]",
+                "[concat(variables('factoryId'), '/datasets/AubiBinaryFile')]",
+                "[concat(variables('factoryId'), '/linkedServices/aubiKeyVault')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/LoadConsumptionDataToDatabase')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "LoadToSQL",
+                        "type": "Copy",
+                        "dependsOn": [
+                            {
+                                "activity": "Set SQL Delete Statement",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "0.02:00:00",
+                            "retry": 2,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "DelimitedTextSource",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageReadSettings",
+                                    "recursive": true
+                                },
+                                "formatSettings": {
+                                    "type": "DelimitedTextReadSettings"
+                                }
+                            },
+                            "sink": {
+                                "type": "AzureSqlSink",
+                                "preCopyScript": {
+                                    "value": "@{variables('sqldelete')}",
+                                    "type": "Expression"
+                                },
+                                "disableMetricsCollection": false
+                            },
+                            "enableStaging": false,
+                            "translator": {
+                                "type": "TabularTranslator",
+                                "mappings": [
+                                    {
+                                        "source": {
+                                            "name": "InvoiceSectionName",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "InvoiceSectionName",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "AccountName",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "AccountName",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "AccountOwnerId",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "AccountOwnerId",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "SubscriptionId",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "SubscriptionId",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "SubscriptionName",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "SubscriptionName",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "ResourceGroup",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "ResourceGroup",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "ResourceLocation",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "ResourceLocation",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "Date",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "Date",
+                                            "type": "DateTime"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "ProductName",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "ProductName",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "MeterCategory",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "MeterCategory",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "MeterSubCategory",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "MeterSubCategory",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "MeterId",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "MeterId",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "MeterName",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "MeterName",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "MeterRegion",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "MeterRegion",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "UnitOfMeasure",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "UnitOfMeasure",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "Quantity",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "Quantity",
+                                            "type": "Decimal"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "EffectivePrice",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "EffectivePrice",
+                                            "type": "Decimal"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "CostInBillingCurrency",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "CostInBillingCurrency",
+                                            "type": "Decimal"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "CostCenter",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "CostCenter",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "ConsumedService",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "ConsumedService",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "ResourceId",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "ResourceId",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "Tags",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "Tags",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "OfferId",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "OfferId",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "AdditionalInfo",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "AdditionalInfo",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "ServiceInfo1",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "ServiceInfo1",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "ServiceInfo2",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "ServiceInfo2",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "ResourceName",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "ResourceName",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "ReservationId",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "ReservationId",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "ReservationName",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "ReservationName",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "UnitPrice",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "UnitPrice",
+                                            "type": "Decimal"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "ProductOrderId",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "ProductOrderId",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "ProductOrderName",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "ProductOrderName",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "Term",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "Term",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "PublisherType",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "PublisherType",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "PublisherName",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "PublisherName",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "ChargeType",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "ChargeType",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "Frequency",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "Frequency",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "PricingModel",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "PricingModel",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "AvailabilityZone",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "AvailabilityZone",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "BillingAccountId",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "BillingAccountId",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "BillingAccountName",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "BillingAccountName",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "BillingCurrencyCode",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "BillingCurrencyCode",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "BillingPeriodStartDate",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "BillingPeriodStartDate",
+                                            "type": "DateTime"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "BillingPeriodEndDate",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "BillingPeriodEndDate",
+                                            "type": "DateTime"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "BillingProfileId",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "BillingProfileId",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "BillingProfileName",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "BillingProfileName",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "InvoiceSectionId",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "InvoiceSectionId",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "IsAzureCreditEligible",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "IsAzureCreditEligible",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "PartNumber",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "PartNumber",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "PayGPrice",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "PayGPrice",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "PlanName",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "PlanName",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "ServiceFamily",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "ServiceFamily",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "CostAllocationRuleName",
+                                            "type": "String"
+                                        },
+                                        "sink": {
+                                            "name": "CostAllocationRuleName",
+                                            "type": "String"
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "CSVFileDataset",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "StorageAccount": {
+                                        "value": "@pipeline().globalParameters.costopt_StorageAccountName",
+                                        "type": "Expression"
+                                    },
+                                    "Container": {
+                                        "value": "@pipeline().globalParameters.costopt_Container",
+                                        "type": "Expression"
+                                    },
+                                    "Directory": {
+                                        "value": "@trim('')",
+                                        "type": "Expression"
+                                    },
+                                    "File": {
+                                        "value": "@pipeline().parameters.UsageDownload_Filename",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "costoptSQLTableDataset",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "tablename": {
+                                        "value": "@pipeline().parameters.TargetTableName",
+                                        "type": "Expression"
+                                    },
+                                    "schemaname": {
+                                        "value": "@pipeline().parameters.TargetSchemaName",
+                                        "type": "Expression"
+                                    },
+                                    "sqlservername": {
+                                        "value": "@pipeline().globalParameters.costopt_sqlservername",
+                                        "type": "Expression"
+                                    },
+                                    "sqldbname": {
+                                        "value": "@pipeline().globalParameters.costopt_sqldbname",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Set SQL Delete Statement",
+                        "type": "SetVariable",
+                        "dependsOn": [],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "variableName": "sqldelete",
+                            "value": {
+                                "value": "DELETE @{pipeline().parameters.TargetSchemaName}.@{pipeline().parameters.TargetTableName} WHERE [Date] BETWEEN '@{pipeline().parameters.StartDate}' AND '@{pipeline().parameters.EndDate}'",
+                                "type": "Expression"
+                            }
+                        }
+                    }
+                ],
+                "concurrency": 1,
+                "policy": {
+                    "elapsedTimeMetric": {},
+                    "cancelAfter": {}
+                },
+                "parameters": {
+                    "TargetSchemaName": {
+                        "type": "string"
+                    },
+                    "TargetTableName": {
+                        "type": "string"
+                    },
+                    "StartDate": {
+                        "type": "string"
+                    },
+                    "EndDate": {
+                        "type": "string"
+                    },
+                    "UsageDownload_Filename": {
+                        "type": "string"
+                    }
+                },
+                "variables": {
+                    "sqldelete": {
+                        "type": "String"
+                    }
+                },
+                "folder": {
+                    "name": "UsageData"
+                },
+                "annotations": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/CSVFileDataset')]",
+                "[concat(variables('factoryId'), '/datasets/costoptSQLTableDataset')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/LoadISFRatioToSQL')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "CopyIFSRatioToSQL",
+                        "type": "Copy",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "DelimitedTextSource",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageReadSettings",
+                                    "recursive": true
+                                },
+                                "formatSettings": {
+                                    "type": "DelimitedTextReadSettings"
+                                }
+                            },
+                            "sink": {
+                                "type": "AzureSqlSink",
+                                "preCopyScript": {
+                                    "value": "delete @{pipeline().parameters.TargetDBSchema}.@{pipeline().parameters.TargetDBTable}",
+                                    "type": "Expression"
+                                },
+                                "disableMetricsCollection": false
+                            },
+                            "enableStaging": false
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "CSVFileDataset",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "StorageAccount": {
+                                        "value": "@pipeline().globalParameters.costopt_StorageAccountName",
+                                        "type": "Expression"
+                                    },
+                                    "Container": {
+                                        "value": "@pipeline().globalParameters.costopt_Container",
+                                        "type": "Expression"
+                                    },
+                                    "Directory": {
+                                        "value": "@pipeline().parameters.Download_StorageBlobDirectory",
+                                        "type": "Expression"
+                                    },
+                                    "File": {
+                                        "value": "@pipeline().parameters.DownloadTargetFilename",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "costoptSQLTableDataset",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "tablename": {
+                                        "value": "@pipeline().parameters.TargetDBTable",
+                                        "type": "Expression"
+                                    },
+                                    "schemaname": {
+                                        "value": "@pipeline().parameters.TargetDBSchema",
+                                        "type": "Expression"
+                                    },
+                                    "sqlservername": {
+                                        "value": "@pipeline().globalParameters.costopt_sqlservername",
+                                        "type": "Expression"
+                                    },
+                                    "sqldbname": {
+                                        "value": "@pipeline().globalParameters.costopt_sqldbname",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {},
+                    "cancelAfter": {}
+                },
+                "parameters": {
+                    "Download_StorageBlobDirectory": {
+                        "type": "string",
+                        "defaultValue": "download/isfratio"
+                    },
+                    "DownloadTargetFilename": {
+                        "type": "string",
+                        "defaultValue": "isfratio.csv"
+                    },
+                    "TargetDBSchema": {
+                        "type": "string",
+                        "defaultValue": "costmanagement"
+                    },
+                    "TargetDBTable": {
+                        "type": "string",
+                        "defaultValue": "ISFData"
+                    }
+                },
+                "folder": {
+                    "name": "ISFRatio"
+                },
+                "annotations": [],
+                "lastPublishTime": "2021-09-21T22:04:41Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/CSVFileDataset')]",
+                "[concat(variables('factoryId'), '/datasets/costoptSQLTableDataset')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/LoadPriceSheetToSQL')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "CopyPriceSheetToSQL",
+                        "type": "Copy",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "JsonSource",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageReadSettings",
+                                    "recursive": true
+                                },
+                                "formatSettings": {
+                                    "type": "JsonReadSettings"
+                                }
+                            },
+                            "sink": {
+                                "type": "AzureSqlSink",
+                                "preCopyScript": "delete aubi.pricesheet",
+                                "disableMetricsCollection": false
+                            },
+                            "enableStaging": false,
+                            "translator": {
+                                "type": "TabularTranslator",
+                                "mappings": [
+                                    {
+                                        "source": {
+                                            "path": "$['offerId']"
+                                        },
+                                        "sink": {
+                                            "name": "offerId",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "$['id']"
+                                        },
+                                        "sink": {
+                                            "name": "id",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "$['billingPeriodId']"
+                                        },
+                                        "sink": {
+                                            "name": "billingPeriodId",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "$['meterId']"
+                                        },
+                                        "sink": {
+                                            "name": "meterId",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "$['meterName']"
+                                        },
+                                        "sink": {
+                                            "name": "meterName",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "$['unitOfMeasure']"
+                                        },
+                                        "sink": {
+                                            "name": "unitOfMeasure",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "$['includedQuantity']"
+                                        },
+                                        "sink": {
+                                            "name": "includedQuantity",
+                                            "type": "Double"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "$['partNumber']"
+                                        },
+                                        "sink": {
+                                            "name": "partNumber",
+                                            "type": "String"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "$['unitPrice']"
+                                        },
+                                        "sink": {
+                                            "name": "unitPrice",
+                                            "type": "Double"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "$['currencyCode']"
+                                        },
+                                        "sink": {
+                                            "name": "currencyCode",
+                                            "type": "String"
+                                        }
+                                    }
+                                ],
+                                "collectionReference": ""
+                            }
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "JsonDataset",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "StorageAccountName": {
+                                        "value": "@pipeline().globalParameters.costopt_StorageAccountName",
+                                        "type": "Expression"
+                                    },
+                                    "Container": {
+                                        "value": "@pipeline().globalParameters.costopt_Container",
+                                        "type": "Expression"
+                                    },
+                                    "Directory": {
+                                        "value": "@pipeline().parameters.Download_StorageBlobDirectory",
+                                        "type": "Expression"
+                                    },
+                                    "FileName": {
+                                        "value": "@pipeline().parameters.DownloadTargetFilename",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "costoptSQLTableDataset",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "tablename": "pricesheet",
+                                    "schemaname": "aubi",
+                                    "sqlservername": {
+                                        "value": "@pipeline().globalParameters.costopt_sqlservername",
+                                        "type": "Expression"
+                                    },
+                                    "sqldbname": {
+                                        "value": "@pipeline().globalParameters.costopt_sqldbname",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {},
+                    "cancelAfter": {}
+                },
+                "parameters": {
+                    "Download_StorageBlobDirectory": {
+                        "type": "string",
+                        "defaultValue": "download/pricesheet"
+                    },
+                    "DownloadTargetFilename": {
+                        "type": "string",
+                        "defaultValue": "pricesheet.json"
+                    }
+                },
+                "folder": {
+                    "name": "PriceSheet"
+                },
+                "annotations": [],
+                "lastPublishTime": "2021-05-19T22:17:52Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/JsonDataset')]",
+                "[concat(variables('factoryId'), '/datasets/costoptSQLTableDataset')]"
+            ]
+        }
+    ]
+}

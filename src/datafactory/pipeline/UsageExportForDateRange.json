@@ -1,0 +1,235 @@
+{
+	"name": "UsageExportForDateRange",
+	"properties": {
+		"description": "Calls the UsageExport pipeline by breaking a large date range into smaller configurable chunks",
+		"activities": [
+			{
+				"name": "UntilEndDateReached",
+				"type": "Until",
+				"dependsOn": [
+					{
+						"activity": "SetBatchStartDate",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greaterOrEquals(variables('BatchEndDate'),pipeline().parameters.EndDate)",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "SetBatchEndDate",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "BatchEndDate",
+								"value": {
+									"value": "@if( greater(adddays(variables('BatchStartDate'),pipeline().parameters.DateRangeInterval,'yyyy-MM-dd') , pipeline().parameters.EndDate)\n, pipeline().parameters.EndDate\n,adddays(variables('BatchStartDate'),pipeline().parameters.DateRangeInterval,'yyyy-MM-dd')\n)",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "AddDateRangeToProcess",
+							"type": "AppendVariable",
+							"dependsOn": [
+								{
+									"activity": "SetBatchEndDate",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "DateRangesToProcess",
+								"value": {
+									"value": "{\"StartDate\":\"@{variables('BatchStartDate')}\",\"EndDate\":\"@{variables('BatchEndDate')}\"}",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "IncrementBatchStartDate",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "AddDateRangeToProcess",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "BatchStartDate",
+								"value": {
+									"value": "@adddays(variables('BatchEndDate'),1,'yyyy-MM-dd')",
+									"type": "Expression"
+								}
+							}
+						}
+					],
+					"timeout": "7.00:00:00"
+				}
+			},
+			{
+				"name": "SetBatchStartDate",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "BatchStartDate",
+					"value": {
+						"value": "@pipeline().parameters.StartDate",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEachDateRange",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "UntilEndDateReached",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@variables('DateRangesToProcess')",
+						"type": "Expression"
+					},
+					"batchCount": 3,
+					"activities": [
+						{
+							"name": "CreateAndRunUsageExport",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "CreateAndRunUsageExport",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"exportName": {
+										"value": "@{pipeline().parameters.exportName_prefix}_@{json(item()).StartDate}_@{json(item()).EndDate}_@{pipeline().parameters.ExportType}",
+										"type": "Expression"
+									},
+									"scope": {
+										"value": "@pipeline().parameters.scope",
+										"type": "Expression"
+									},
+									"CostManagementApiVersion": {
+										"value": "@pipeline().parameters.CostManagementApiVersion",
+										"type": "Expression"
+									},
+									"UsageDownload_StorageBlobDirectory": {
+										"value": "@pipeline().parameters.UsageDownload_StorageBlobDirectory",
+										"type": "Expression"
+									},
+									"MaxExportExecutionRetries": {
+										"value": "@pipeline().parameters.MaxExportExecutionRetries",
+										"type": "Expression"
+									},
+									"StartDate": {
+										"value": "@json(item()).StartDate",
+										"type": "Expression"
+									},
+									"EndDate": {
+										"value": "@json(item()).EndDate",
+										"type": "Expression"
+									},
+									"ExportTimeframe": {
+										"value": "@pipeline().parameters.ExportTimeframe",
+										"type": "Expression"
+									},
+									"ExportType": {
+										"value": "@pipeline().parameters.ExportType",
+										"type": "Expression"
+									},
+									"ExportStatusCheckLoopTime": {
+										"value": "@pipeline().parameters.ExportStatusCheckLoopTime",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"exportName_prefix": {
+				"type": "string",
+				"defaultValue": "msftExportUsageTemp"
+			},
+			"scope": {
+				"type": "string"
+			},
+			"CostManagementApiVersion": {
+				"type": "string",
+				"defaultValue": "2021-01-01"
+			},
+			"UsageDownload_StorageBlobDirectory": {
+				"type": "string",
+				"defaultValue": "download/usage"
+			},
+			"MaxExportExecutionRetries": {
+				"type": "int",
+				"defaultValue": 3
+			},
+			"StartDate": {
+				"type": "string",
+				"defaultValue": "2021-09-01"
+			},
+			"EndDate": {
+				"type": "string",
+				"defaultValue": "2021-09-02"
+			},
+			"ExportTimeframe": {
+				"type": "string",
+				"defaultValue": "Custom"
+			},
+			"ExportType": {
+				"type": "string",
+				"defaultValue": "ActualCost"
+			},
+			"ExportStatusCheckLoopTime": {
+				"type": "int",
+				"defaultValue": 60
+			},
+			"DateRangeInterval": {
+				"type": "int",
+				"defaultValue": 1
+			}
+		},
+		"variables": {
+			"DateRangesToProcess": {
+				"type": "Array"
+			},
+			"BatchStartDate": {
+				"type": "String"
+			},
+			"BatchEndDate": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "UsageData"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-09-23T11:22:11Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

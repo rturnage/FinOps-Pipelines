@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+######################################################
+# Get Azure Datafactory eTag version.
+#
+# Globals
+#   RESOURCE_GROUP resource group of datafactory
+#   PIPELINE_ADF_NAME name of data factory
+######################################################
+echo starting script
+
+# Stop on errors
+set -e
+
+## Globals
+PROJ_ROOT_PATH=$(cd "$(dirname "$0")"/..; pwd)
+echo "root folder: $PROJ_ROOT_PATH"
+
+echo "loading env variables"
+ENV_VARS="$(awk '!/^\s*#/' "${PROJ_ROOT_PATH}/.env" | awk '!/^\s*$/')"
+eval "$(
+  printf '%s\n' "$ENV_VARS" | while IFS='' read -r line; do
+    key=$(printf '%s\n' "$line"| sed 's/"/\\"/g' | cut -d '=' -f 1)
+    value=$(printf '%s\n' "$line" | cut -d '=' -f 2- | sed 's/"/\\\"/g' | tr -d '\f\r')
+    printf '%s\n' "export $key=\"$value\""
+  done
+)"
+
+datafactory_id=$(az datafactory list --resource-group "$RESOURCE_GROUP" --query="[].id" --output tsv | grep "$PIPELINE_ADF_NAME" )
+
+echo "id is: $datafactory_id"
+datafactory_etag=$(az datafactory show --id  "$datafactory_id" | jq ".eTag"  | tr -d '"\\"')
+echo "$datafactory_etag"
